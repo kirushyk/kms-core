@@ -935,6 +935,7 @@ kms_utils_set_uuid (GObject * obj)
 {
   gchar *uuid_str;
 #ifdef _WIN32
+  RPC_CSTR uuid_rpc_str;
   GUID uuid;
 #else
   uuid_t uuid;
@@ -942,7 +943,9 @@ kms_utils_set_uuid (GObject * obj)
 
 #ifdef _WIN32
   CoCreateGuid (&uuid);
-  uidToString (&uuid, &uuid_str);
+  UuidToStringA (&uuid, &uuid_rpc_str);
+  uuid_str = g_strdup (uuid_rpc_str);
+  RpcStringFree (&uuid_rpc_str);
 #else
   uuid_generate (uuid);
   uuid_str = (gchar *) g_malloc0 (UUID_STR_SIZE);
@@ -951,11 +954,7 @@ kms_utils_set_uuid (GObject * obj)
 
   /* Assign a unique ID to each SSRC which will */
   /* be provided in statistics */
-#ifdef _WIN32
-  g_object_set_data_full (obj, KMS_KEY_ID, uuid_str, RpcStringFree);
-#else
   g_object_set_data_full (obj, KMS_KEY_ID, uuid_str, g_free);
-#endif
 }
 
 const gchar *
