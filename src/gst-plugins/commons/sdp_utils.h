@@ -45,6 +45,7 @@ typedef gboolean (*GstSDPIntersectMediaFunc) (const GstSDPAttribute *attr, gpoin
 gboolean sdp_utils_is_attribute_in_media (const GstSDPMedia * media, const GstSDPAttribute * attr);
 gboolean sdp_utils_attribute_is_direction (const GstSDPAttribute * attr, GstSDPDirection * direction);
 guint sdp_utils_media_get_ssrc (const GstSDPMedia * media);
+guint sdp_utils_media_get_fid_ssrc (const GstSDPMedia * media, guint pos);
 GstSDPDirection sdp_utils_media_config_get_direction (const GstSDPMedia * media);
 
 const gchar *sdp_utils_sdp_media_get_rtpmap (const GstSDPMedia * media,
@@ -65,5 +66,7 @@ gboolean sdp_utils_media_has_rtcp_nack (const GstSDPMedia * media);
 
 gboolean sdp_utils_equal_medias (const GstSDPMedia * m1, const GstSDPMedia * m2);
 gboolean sdp_utils_equal_messages (const GstSDPMessage * msg1, const GstSDPMessage * msg2);
+
+gboolean sdp_utils_get_data_from_rtpmap (const gchar * rtpmap, gchar ** codec_name, gint * clock_rate);
 
 #endif /* __SDP_H__ */

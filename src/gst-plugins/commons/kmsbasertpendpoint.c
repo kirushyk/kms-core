@@ -727,12 +727,14 @@ kms_base_rtp_endpoint_create_remb_managers (KmsBaseRtpSession * sess,
 
   g_object_get (self, "max-video-recv-bandwidth", &max_recv_bw, NULL);
   self->priv->rl =
-      kms_remb_local_create (rtpsession, VIDEO_RTP_SESSION,
-      sess->remote_video_ssrc, self->priv->min_video_recv_bw, max_recv_bw);
+      kms_remb_local_create (rtpsession, self->priv->min_video_recv_bw,
+      max_recv_bw);
+  kms_remb_local_add_remote_session (self->priv->rl, rtpsession,
+      sess->remote_video_ssrc);
 
   pad = gst_element_get_static_pad (rtpbin, VIDEO_RTPBIN_SEND_RTP_SINK);
   self->priv->rm =
-      kms_remb_remote_create (rtpsession, VIDEO_RTP_SESSION,
+      kms_remb_remote_create (rtpsession,
       self->priv->video_config->local_ssrc, self->priv->min_video_send_bw,
       self->priv->max_video_send_bw, pad);
   g_object_unref (pad);
@@ -962,27 +964,25 @@ kms_base_rtp_endpoint_get_caps_from_rtpmap (const gchar * media,
     const gchar * pt, const gchar * rtpmap)
 {
   GstCaps *caps = NULL;
-  gchar **tokens;
+  gint clock_rate;
+  gchar *codec_name = NULL;
 
   if (rtpmap == NULL) {
     GST_WARNING ("rtpmap is NULL for media '%s'", media);
     return NULL;
   }
 
-  tokens = g_strsplit (rtpmap, "/", 3);
-
-  if (tokens[0] == NULL || tokens[1] == NULL) {
-    goto end;
+  if (!sdp_utils_get_data_from_rtpmap (rtpmap, &codec_name, &clock_rate)) {
+    return NULL;
   }
 
   caps = gst_caps_new_simple ("application/x-rtp",
       "media", G_TYPE_STRING, media,
       "payload", G_TYPE_INT, atoi (pt),
-      "clock-rate", G_TYPE_INT, atoi (tokens[1]),
-      "encoding-name", G_TYPE_STRING, get_caps_codec_name (tokens[0]), NULL);
+      "clock-rate", G_TYPE_INT, clock_rate,
+      "encoding-name", G_TYPE_STRING, get_caps_codec_name (codec_name), NULL);
 
-end:
-  g_strfreev (tokens);
+  g_free (codec_name);
 
   return caps;
 }
@@ -2180,12 +2180,13 @@ static void
 kms_base_rtp_endpoint_append_remb_stats (KmsBaseRtpEndpoint * self,
     GstStructure * stats)
 {
+  KmsSdpSession *sdp_sess = KMS_SDP_SESSION (self->priv->sess);
   KmsRembStats rs;
 
   if (self->priv->rl != NULL) {
     KMS_REMB_BASE_LOCK (self->priv->rl);
     rs.stats = stats;
-    rs.session = KMS_REMB_BASE (self->priv->rl)->session;
+    rs.session = sdp_sess->id;
     g_hash_table_foreach (KMS_REMB_BASE (self->priv->rl)->remb_stats,
         (GHFunc) merge_remb_stats, &rs);
     KMS_REMB_BASE_UNLOCK (self->priv->rl);
@@ -2194,7 +2195,7 @@ kms_base_rtp_endpoint_append_remb_stats (KmsBaseRtpEndpoint * self,
   if (self->priv->rm != NULL) {
     KMS_REMB_BASE_LOCK (self->priv->rm);
     rs.stats = stats;
-    rs.session = KMS_REMB_BASE (self->priv->rm)->session;
+    rs.session = sdp_sess->id;
     g_hash_table_foreach (KMS_REMB_BASE (self->priv->rm)->remb_stats,
         (GHFunc) merge_remb_stats, &rs);
     KMS_REMB_BASE_UNLOCK (self->priv->rm);
