@@ -17,7 +17,12 @@
 #include "constants.h"
 #include "kmsagnosticcaps.h"
 #include <gst/video/video-event.h>
+#ifdef _WIN32
+#include <rpc.h>
+#include <ole2.h>
+#else
 #include <uuid/uuid.h>
+#endif
 
 #define GST_CAT_DEFAULT kmsutils
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
@@ -929,15 +934,28 @@ void
 kms_utils_set_uuid (GObject * obj)
 {
   gchar *uuid_str;
+#ifdef _WIN32
+  GUID uuid;
+#else
   uuid_t uuid;
+#endif
 
-  uuid_str = (gchar *) g_malloc0 (UUID_STR_SIZE);
+#ifdef _WIN32
+  CoCreateGuid (&uuid);
+  uidToString (&uuid, &uuid_str);
+#else
   uuid_generate (uuid);
+  uuid_str = (gchar *) g_malloc0 (UUID_STR_SIZE);
   uuid_unparse (uuid, uuid_str);
+#endif
 
   /* Assign a unique ID to each SSRC which will */
   /* be provided in statistics */
+#ifdef _WIN32
+  g_object_set_data_full (obj, KMS_KEY_ID, uuid_str, RpcStringFree);
+#else
   g_object_set_data_full (obj, KMS_KEY_ID, uuid_str, g_free);
+#endif
 }
 
 const gchar *
