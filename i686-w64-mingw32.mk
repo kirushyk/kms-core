@@ -42,6 +42,8 @@ SDPAGENT_LIBS= \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
 -lgstreamer-1.0 \
+-lgobject-2.0 \
+-lglib-2.0 \
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 
