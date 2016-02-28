@@ -37,15 +37,20 @@ SDPAGENT_SRC= \
 ./src/gst-plugins/commons/sdpagent/kmssdprejectmediahandler.c \
 ./src/gst-plugins/commons/kmsrefstruct.c \
 ./src/gst-plugins/commons/sdp_utils.c \
+./src/gst-plugins/commons/kmsutils.c \
 ./win32/kms-sdp-agent-marshal.c
 
 SDPAGENT_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
+-lgstvideo-1.0.dll \
+-lgstsdp-1.0.dll \
 -lgstreamer-1.0 \
 -lgobject-2.0 \
--lglib-2.0 \
+-lrpcrt4 \
+-lole32 \
+-lglib-2.0
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 
