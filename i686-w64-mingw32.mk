@@ -35,6 +35,7 @@ SDPAGENT_SRC= \
 ./src/gst-plugins/commons/sdpagent/kmssdpsdesext.c \
 ./src/gst-plugins/commons/sdpagent/kmsisdppayloadmanager.c \
 ./src/gst-plugins/commons/sdpagent/kmssdprejectmediahandler.c \
+./src/gst-plugins/commons/kmsrefstruct.c \
 ./win32/kms-sdp-agent-marshal.c
 
 SDPAGENT_LIBS= \
