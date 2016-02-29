@@ -9,6 +9,7 @@ CFLAGS= \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/gstreamer-1.0/include \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/glib-2.0 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/glib-2.0/include \
+-I./src/gst-plugins/commons/ \
 -I./win32
 
 SDPAGENT_TARGET=libkmssdpagent.dll
@@ -35,6 +36,7 @@ SDPAGENT_SRC= \
 ./src/gst-plugins/commons/sdpagent/kmssdpsdesext.c \
 ./src/gst-plugins/commons/sdpagent/kmsisdppayloadmanager.c \
 ./src/gst-plugins/commons/sdpagent/kmssdprejectmediahandler.c \
+\
 ./src/gst-plugins/commons/kmsrefstruct.c \
 ./src/gst-plugins/commons/sdp_utils.c \
 ./src/gst-plugins/commons/kmsutils.c \
@@ -48,20 +50,71 @@ SDPAGENT_LIBS= \
 -lgstsdp-1.0.dll \
 -lgstreamer-1.0 \
 -lgobject-2.0 \
+-lglib-2.0 \
 -lrpcrt4 \
--lole32 \
--lglib-2.0
+-lole32
+
+KMSCOMMONS_TARGET=libkmsgstcommons.dll
+
+KMSCOMMONS_SRC= \
+./src/gst-plugins/commons/kmsrtcp.c \
+./src/gst-plugins/commons/kmsremb.c \
+./src/gst-plugins/commons/kmssdpsession.c \
+./src/gst-plugins/commons/kmsbasertpsession.c \
+./src/gst-plugins/commons/kmsirtpsessionmanager.c \
+./src/gst-plugins/commons/kmsirtpconnection.c \
+./src/gst-plugins/commons/kmsbasertpendpoint.c \
+./src/gst-plugins/commons/kmsbasesdpendpoint.c \
+./src/gst-plugins/commons/kmselement.c \
+./src/gst-plugins/commons/kmsloop.c \
+./src/gst-plugins/commons/kmsrecordingprofile.c \
+./src/gst-plugins/commons/kmshubport.c \
+./src/gst-plugins/commons/kmsbasehub.c \
+./src/gst-plugins/commons/kmsuriendpoint.c \
+./src/gst-plugins/commons/kmsbufferlacentymeta.c \
+./src/gst-plugins/commons/kmsserializablemeta.c \
+./src/gst-plugins/commons/kmsstats.c \
+./src/gst-plugins/commons/kmstreebin.c \
+./src/gst-plugins/commons/kmsdectreebin.c \
+./src/gst-plugins/commons/kmsenctreebin.c \
+./src/gst-plugins/commons/kmsparsetreebin.c \
+./src/gst-plugins/commons/kmslist.c \
+\
+./src/gst-plugins/commons/kmsrefstruct.c \
+./src/gst-plugins/commons/sdp_utils.c \
+./src/gst-plugins/commons/kmsutils.c \
+./win32/kms-core-enumtypes.c \
+./win32/kms-sdp-agent-marshal.c
+
+KMSCOMMONS_LIBS= \
+-L/usr/i686-w64-mingw32/sys-root/mingw/lib \
+-L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
+-L/usr/i686-w64-mingw32/lib/ \
+-L./build/ \
+-lkmssdpagent \
+-lgstvideo-1.0.dll \
+-lgstsdp-1.0.dll \
+-lgstreamer-1.0 \
+-lgobject-2.0 \
+-lglib-2.0 \
+-lrpcrt4 \
+-lole32
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
+KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-all: $(TARGET_DIR)/$(SDPAGENT_TARGET)
+all: $(TARGET_DIR)/$(SDPAGENT_TARGET) $(TARGET_DIR)/$(KMSCOMMONS_TARGET)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
 	$(CC) -shared -o $(TARGET_DIR)/$(SDPAGENT_TARGET) $(CFLAGS) $(SDPAGENT_OBJS) $(SDPAGENT_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(SDPAGENT_TARGET).a
+
+$(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
+	mkdir -p $(TARGET_DIR)
+	$(CC) -shared -o $(TARGET_DIR)/$(KMSCOMMONS_TARGET) $(CFLAGS) $(KMSCOMMONS_OBJS) $(KMSCOMMONS_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOMMONS_TARGET).a
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
