@@ -92,7 +92,9 @@ KMSCOMMONS_LIBS= \
 -L/usr/i686-w64-mingw32/lib/ \
 -L./build/ \
 -lkmssdpagent \
+-lgstpbutils-1.0.dll \
 -lgstvideo-1.0.dll \
+-lgstrtp-1.0.dll \
 -lgstsdp-1.0.dll \
 -lgstreamer-1.0 \
 -lgobject-2.0 \
