@@ -84,7 +84,7 @@ KMSCOMMONS_SRC= \
 ./src/gst-plugins/commons/sdp_utils.c \
 ./src/gst-plugins/commons/kmsutils.c \
 ./win32/kms-core-enumtypes.c \
-./win32/kms-sdp-agent-marshal.c
+./win32/kms-core-marshal.c
 
 KMSCOMMONS_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
