@@ -134,12 +134,12 @@ KMSCOREIMPL_LIBS= \
 -lglib-2.0 \
 -lkmssdpagent \
 -lkmsgstcommons \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_system-mt.a \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_log-mt.a \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_log_setup-mt.a \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_program_options-mt.a \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_filesystem-mt.a \
-/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_thread-mt.a
+-lboost_system-mt \
+-lboost_log-mt \
+-lboost_log_setup-mt \
+-lboost_program_options-mt \
+-lboost_filesystem-mt \
+-lboost_thread-mt
 
 KMSCOREIMPL_SRC= \
 ./src/server/implementation/DotGraph.cpp \
