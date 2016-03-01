@@ -14,6 +14,8 @@ CFLAGS= \
 -I./win32/server/implementation/generated-cpp/ \
 -I./win32/server/interface/generated-cpp/  \
 -I./src/server/implementation/ \
+-I./src/server/interface/ \
+-I./src/gst-plugins/ \
 -I./src/gst-plugins/commons/ \
 -I../jsoncpp/include/ \
 -I../kms-jsonrpc/src/ \
