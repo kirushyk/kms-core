@@ -102,10 +102,45 @@ KMSCOMMONS_LIBS= \
 -lrpcrt4 \
 -lole32
 
+KMSCOREIMPL_TARGET=libkmscoreimpl.dll
+
+KMSCOREIMPL_LIBS= \
+-L/usr/i686-w64-mingw32/sys-root/mingw/lib \
+-L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
+-L/usr/i686-w64-mingw32/lib/ \
+-L./build/ \
+-lkmssdpagent \
+-lkmsgstcommons
+
+KMSCOREIMPL_SRC= \
+./src/server/implementation/DotGraph.cpp \
+./src/server/implementation/RegisterParent.cpp \
+./src/server/implementation/objects/ServerManagerImpl.cpp \
+./src/server/implementation/objects/PassThroughImpl.cpp \
+./src/server/implementation/objects/HubImpl.cpp \
+./src/server/implementation/objects/MediaPipelineImpl.cpp \
+./src/server/implementation/objects/MediaPadImpl.cpp \
+./src/server/implementation/objects/SessionEndpointImpl.cpp \
+./src/server/implementation/objects/SdpEndpointImpl.cpp \
+./src/server/implementation/objects/HubPortImpl.cpp \
+./src/server/implementation/objects/MediaElementImpl.cpp \
+./src/server/implementation/objects/FilterImpl.cpp \
+./src/server/implementation/objects/UriEndpointImpl.cpp \
+./src/server/implementation/objects/MediaObjectImpl.cpp \
+./src/server/implementation/objects/BaseRtpEndpointImpl.cpp \
+./src/server/implementation/objects/EndpointImpl.cpp \
+./src/server/implementation/MediaSet.cpp \
+./src/server/implementation/Factory.cpp \
+./src/server/implementation/ModuleManager.cpp \
+./src/server/implementation/WorkerPool.cpp \
+./src/server/implementation/UUIDGenerator.cpp \
+./src/server/implementation/EventHandler.cpp
+
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
+KMSCOREIMPL_OBJS=$(KMSCOREIMPL_SRC:.c=.o)
 
-all: $(TARGET_DIR)/$(SDPAGENT_TARGET) $(TARGET_DIR)/$(KMSCOMMONS_TARGET)
+all: $(TARGET_DIR)/$(SDPAGENT_TARGET) $(TARGET_DIR)/$(KMSCOMMONS_TARGET) $(TARGET_DIR)/$(KMSCOREIMPL_TARGET)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
@@ -114,6 +149,10 @@ $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
 	mkdir -p $(TARGET_DIR)
 	$(CC) -shared -o $(TARGET_DIR)/$(KMSCOMMONS_TARGET) $(CFLAGS) $(KMSCOMMONS_OBJS) $(KMSCOMMONS_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOMMONS_TARGET).a
+
+$(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
+	mkdir -p $(TARGET_DIR)
+	$(CC) -shared -o $(TARGET_DIR)/$(KMSCOREIMPL_TARGET) $(CFLAGS) $(KMSCOREIMPL_OBJS) $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOREIMPL_TARGET).a
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
