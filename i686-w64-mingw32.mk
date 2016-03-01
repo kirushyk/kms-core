@@ -9,9 +9,14 @@ CFLAGS= \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/gstreamer-1.0/include \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/glib-2.0 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/glib-2.0/include \
+-I/usr/i686-w64-mingw32/sys-root/mingw/include/sigc++-2.0 \
+-I/usr/i686-w64-mingw32/sys-root/mingw/lib/sigc++-2.0/include \
+-I./win32/server/implementation/generated-cpp/ \
+-I./win32/server/interface/generated-cpp/  \
 -I./src/server/implementation/ \
 -I./src/gst-plugins/commons/ \
 -I../jsoncpp/include/ \
+-I../kms-jsonrpc/src/ \
 -I./win32
 
 SDPAGENT_TARGET=libkmssdpagent.dll
@@ -110,9 +115,12 @@ KMSCOREIMPL_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
+-L../kms-jsonrpc/build/ \
 -L../jsoncpp/build/ \
 -L./build/ \
+-lsigc-2.0 \
 -lkmsjsoncpp.dll \
+-lkmsjsonrpc.dll \
 -lkmssdpagent \
 -lkmsgstcommons
 
@@ -138,7 +146,105 @@ KMSCOREIMPL_SRC= \
 ./src/server/implementation/ModuleManager.cpp \
 ./src/server/implementation/WorkerPool.cpp \
 ./src/server/implementation/UUIDGenerator.cpp \
-./src/server/implementation/EventHandler.cpp
+./src/server/implementation/EventHandler.cpp \
+\
+./win32/server/module_version.cpp \
+./win32/server/module_name.cpp \
+./win32/server/implementation/generated-cpp/SessionEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/MediaElementImplInternal.cpp \
+./win32/server/implementation/generated-cpp/MediaPipelineImplInternal.cpp \
+./win32/server/implementation/generated-cpp/UriEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/SdpEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/HubPortImplInternal.cpp \
+./win32/server/implementation/generated-cpp/HubImplInternal.cpp \
+./win32/server/implementation/generated-cpp/SerializerExpanderCore.cpp \
+./win32/server/implementation/generated-cpp/EndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/FilterImplInternal.cpp \
+./win32/server/implementation/generated-cpp/PassThroughImplInternal.cpp \
+./win32/server/implementation/generated-cpp/ServerManagerImplInternal.cpp \
+./win32/server/implementation/generated-cpp/MediaObjectImplInternal.cpp \
+./win32/server/implementation/generated-cpp/BaseRtpEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/Module.cpp \
+./win32/server/module_descriptor.cpp \
+./win32/server/interface/generated-cpp/RTCStatsIceCandidatePairState.cpp \
+./win32/server/interface/generated-cpp/RTCTransportStats.cpp \
+./win32/server/interface/generated-cpp/RaiseBase.cpp \
+./win32/server/interface/generated-cpp/ObjectDestroyed.cpp \
+./win32/server/interface/generated-cpp/Error.cpp \
+./win32/server/interface/generated-cpp/ElementDisconnected.cpp \
+./win32/server/interface/generated-cpp/SdpEndpointInternal.cpp \
+./win32/server/interface/generated-cpp/EndpointInternal.cpp \
+./win32/server/interface/generated-cpp/CodecConfiguration.cpp \
+./win32/server/interface/generated-cpp/Hub.cpp \
+./win32/server/interface/generated-cpp/RTCInboundRTPStreamStats.cpp \
+./win32/server/interface/generated-cpp/HubInternal.cpp \
+./win32/server/interface/generated-cpp/ElementStats.cpp \
+./win32/server/interface/generated-cpp/UriEndpoint.cpp \
+./win32/server/interface/generated-cpp/ModuleInfo.cpp \
+./win32/server/interface/generated-cpp/RTCStats.cpp \
+./win32/server/interface/generated-cpp/Filter.cpp \
+./win32/server/interface/generated-cpp/MediaState.cpp \
+./win32/server/interface/generated-cpp/RTCMediaStreamStats.cpp \
+./win32/server/interface/generated-cpp/MediaPipeline.cpp \
+./win32/server/interface/generated-cpp/EndpointStats.cpp \
+./win32/server/interface/generated-cpp/ConnectionStateChanged.cpp \
+./win32/server/interface/generated-cpp/RTCRTPStreamStats.cpp \
+./win32/server/interface/generated-cpp/RTCDataChannelState.cpp \
+./win32/server/interface/generated-cpp/MediaElementInternal.cpp \
+./win32/server/interface/generated-cpp/MediaStateChanged.cpp \
+./win32/server/interface/generated-cpp/ElementConnectionData.cpp \
+./win32/server/interface/generated-cpp/MediaFlowInStateChange.cpp \
+./win32/server/interface/generated-cpp/MediaObject.cpp \
+./win32/server/interface/generated-cpp/ObjectCreated.cpp \
+./win32/server/interface/generated-cpp/SessionEndpoint.cpp \
+./win32/server/interface/generated-cpp/AudioCaps.cpp \
+./win32/server/interface/generated-cpp/RTCIceCandidatePairStats.cpp \
+./win32/server/interface/generated-cpp/RTCMediaStreamTrackStats.cpp \
+./win32/server/interface/generated-cpp/MediaSessionTerminated.cpp \
+./win32/server/interface/generated-cpp/ServerManager.cpp \
+./win32/server/interface/generated-cpp/SessionEndpointInternal.cpp \
+./win32/server/interface/generated-cpp/Media.cpp \
+./win32/server/interface/generated-cpp/ServerInfo.cpp \
+./win32/server/interface/generated-cpp/BaseRtpEndpointInternal.cpp \
+./win32/server/interface/generated-cpp/RTCIceCandidateAttributes.cpp \
+./win32/server/interface/generated-cpp/Endpoint.cpp \
+./win32/server/interface/generated-cpp/MediaFlowOutStateChange.cpp \
+./win32/server/interface/generated-cpp/PassThroughInternal.cpp \
+./win32/server/interface/generated-cpp/MediaObjectInternal.cpp \
+./win32/server/interface/generated-cpp/MediaElement.cpp \
+./win32/server/interface/generated-cpp/RTCCertificateStats.cpp \
+./win32/server/interface/generated-cpp/StatsType.cpp \
+./win32/server/interface/generated-cpp/Stats.cpp \
+./win32/server/interface/generated-cpp/RTCCodec.cpp \
+./win32/server/interface/generated-cpp/PassThrough.cpp \
+./win32/server/interface/generated-cpp/RTCPeerConnectionStats.cpp \
+./win32/server/interface/generated-cpp/AudioCodec.cpp \
+./win32/server/interface/generated-cpp/HubPortInternal.cpp \
+./win32/server/interface/generated-cpp/Tag.cpp \
+./win32/server/interface/generated-cpp/FilterType.cpp \
+./win32/server/interface/generated-cpp/MediaType.cpp \
+./win32/server/interface/generated-cpp/FilterInternal.cpp \
+./win32/server/interface/generated-cpp/UriEndpointInternal.cpp \
+./win32/server/interface/generated-cpp/MediaLatencyStat.cpp \
+./win32/server/interface/generated-cpp/SdpEndpoint.cpp \
+./win32/server/interface/generated-cpp/VideoCodec.cpp \
+./win32/server/interface/generated-cpp/RTCStatsIceCandidateType.cpp \
+./win32/server/interface/generated-cpp/RembParams.cpp \
+./win32/server/interface/generated-cpp/MediaPipelineInternal.cpp \
+./win32/server/interface/generated-cpp/Fraction.cpp \
+./win32/server/interface/generated-cpp/RTCDataChannelStats.cpp \
+./win32/server/interface/generated-cpp/ServerType.cpp \
+./win32/server/interface/generated-cpp/RTCOutboundRTPStreamStats.cpp \
+./win32/server/interface/generated-cpp/HubPort.cpp \
+./win32/server/interface/generated-cpp/MediaFlowState.cpp \
+./win32/server/interface/generated-cpp/GstreamerDotDetails.cpp \
+./win32/server/interface/generated-cpp/ConnectionState.cpp \
+./win32/server/interface/generated-cpp/ElementConnected.cpp \
+./win32/server/interface/generated-cpp/ServerManagerInternal.cpp \
+./win32/server/interface/generated-cpp/VideoCaps.cpp \
+./win32/server/interface/generated-cpp/BaseRtpEndpoint.cpp \
+./win32/server/interface/generated-cpp/MediaSessionStarted.cpp \
+./win32/server/module_generation_time.cpp
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
