@@ -19,6 +19,7 @@ CFLAGS= \
 -I./src/gst-plugins/commons/ \
 -I../jsoncpp/include/ \
 -I../kms-jsonrpc/src/ \
+-I./src/server/implementation/objects/ \
 -I./win32
 
 SDPAGENT_TARGET=libkmssdpagent.dll
@@ -133,7 +134,6 @@ KMSCOREIMPL_SRC= \
 ./src/server/implementation/objects/PassThroughImpl.cpp \
 ./src/server/implementation/objects/HubImpl.cpp \
 ./src/server/implementation/objects/MediaPipelineImpl.cpp \
-./src/server/implementation/objects/MediaPadImpl.cpp \
 ./src/server/implementation/objects/SessionEndpointImpl.cpp \
 ./src/server/implementation/objects/SdpEndpointImpl.cpp \
 ./src/server/implementation/objects/HubPortImpl.cpp \
@@ -247,6 +247,8 @@ KMSCOREIMPL_SRC= \
 ./win32/server/interface/generated-cpp/BaseRtpEndpoint.cpp \
 ./win32/server/interface/generated-cpp/MediaSessionStarted.cpp \
 ./win32/server/module_generation_time.cpp
+
+#./src/server/implementation/objects/MediaPadImpl.cpp \
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
