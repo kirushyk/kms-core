@@ -9,7 +9,9 @@ CFLAGS= \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/gstreamer-1.0/include \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/glib-2.0 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/glib-2.0/include \
+-I./src/server/implementation/ \
 -I./src/gst-plugins/commons/ \
+-I../jsoncpp/include/ \
 -I./win32
 
 SDPAGENT_TARGET=libkmssdpagent.dll
@@ -108,7 +110,9 @@ KMSCOREIMPL_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
+-L../jsoncpp/build/ \
 -L./build/ \
+-lkmsjsoncpp.dll \
 -lkmssdpagent \
 -lkmsgstcommons
 
@@ -138,7 +142,7 @@ KMSCOREIMPL_SRC= \
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
-KMSCOREIMPL_OBJS=$(KMSCOREIMPL_SRC:.c=.o)
+KMSCOREIMPL_OBJS=$(KMSCOREIMPL_SRC:.cpp=.o)
 
 all: $(TARGET_DIR)/$(SDPAGENT_TARGET) $(TARGET_DIR)/$(KMSCOMMONS_TARGET) $(TARGET_DIR)/$(KMSCOREIMPL_TARGET)
 
@@ -156,6 +160,9 @@ $(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
+
+%.o: %.cpp
+	$(CC) -c $(CFLAGS) $(CXXFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
