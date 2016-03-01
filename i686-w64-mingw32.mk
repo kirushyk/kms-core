@@ -116,31 +116,6 @@ KMSCOMMONS_LIBS= \
 
 KMSCOREIMPL_TARGET=libkmscoreimpl.dll
 
-KMSCOREIMPL_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L../kms-jsonrpc/build/ \
--L../jsoncpp/build/ \
--L./build/ \
--lsigc-2.0 \
--lkmsjsoncpp.dll \
--lkmsjsonrpc.dll \
--lgstreamer-1.0 \
--lws2_32 \
--lgstsdp-1.0.dll \
--lglibmm-2.4 \
--lgobject-2.0 \
--lglib-2.0 \
--lkmssdpagent \
--lkmsgstcommons \
--lboost_system-mt \
--lboost_log-mt \
--lboost_log_setup-mt \
--lboost_program_options-mt \
--lboost_filesystem-mt \
--lboost_thread-mt
-
 KMSCOREIMPL_SRC= \
 ./src/server/implementation/DotGraph.cpp \
 ./src/server/implementation/RegisterParent.cpp \
@@ -260,9 +235,33 @@ KMSCOREIMPL_SRC= \
 ./win32/server/interface/generated-cpp/BaseRtpEndpoint.cpp \
 ./win32/server/interface/generated-cpp/MediaSessionStarted.cpp \
 ./win32/server/module_generation_time.cpp
-
 #./win32/server/module_descriptor.cpp \
 #./src/server/implementation/objects/MediaPadImpl.cpp \
+
+KMSCOREIMPL_LIBS= \
+-L/usr/i686-w64-mingw32/sys-root/mingw/lib \
+-L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
+-L/usr/i686-w64-mingw32/lib/ \
+-L../kms-jsonrpc/build/ \
+-L../jsoncpp/build/ \
+-L./build/ \
+-lsigc-2.0 \
+-lkmsjsoncpp.dll \
+-lkmsjsonrpc.dll \
+-lgstreamer-1.0 \
+-lws2_32 \
+-lgstsdp-1.0.dll \
+-lglibmm-2.4 \
+-lgobject-2.0 \
+-lglib-2.0 \
+-lkmssdpagent \
+-lkmsgstcommons \
+-lboost_system-mt \
+-lboost_log-mt \
+-lboost_log_setup-mt \
+-lboost_program_options-mt \
+-lboost_filesystem-mt \
+-lboost_thread-mt
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
