@@ -126,9 +126,20 @@ KMSCOREIMPL_LIBS= \
 -lsigc-2.0 \
 -lkmsjsoncpp.dll \
 -lkmsjsonrpc.dll \
+-lgstreamer-1.0 \
+-lws2_32 \
+-lgstsdp-1.0.dll \
 -lglibmm-2.4 \
+-lgobject-2.0 \
+-lglib-2.0 \
 -lkmssdpagent \
--lkmsgstcommons
+-lkmsgstcommons \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_system-mt.a \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_log-mt.a \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_log_setup-mt.a \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_program_options-mt.a \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_filesystem-mt.a \
+/usr/i686-w64-mingw32/sys-root/mingw/lib/libboost_thread-mt.a
 
 KMSCOREIMPL_SRC= \
 ./src/server/implementation/DotGraph.cpp \
@@ -170,7 +181,6 @@ KMSCOREIMPL_SRC= \
 ./win32/server/implementation/generated-cpp/MediaObjectImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/BaseRtpEndpointImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/Module.cpp \
-./win32/server/module_descriptor.cpp \
 ./win32/server/interface/generated-cpp/RTCStatsIceCandidatePairState.cpp \
 ./win32/server/interface/generated-cpp/RTCTransportStats.cpp \
 ./win32/server/interface/generated-cpp/RaiseBase.cpp \
@@ -251,6 +261,7 @@ KMSCOREIMPL_SRC= \
 ./win32/server/interface/generated-cpp/MediaSessionStarted.cpp \
 ./win32/server/module_generation_time.cpp
 
+#./win32/server/module_descriptor.cpp \
 #./src/server/implementation/objects/MediaPadImpl.cpp \
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
@@ -269,7 +280,7 @@ $(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
 
 $(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $(TARGET_DIR)/$(KMSCOREIMPL_TARGET) $(CFLAGS) $(KMSCOREIMPL_OBJS) $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOREIMPL_TARGET).a
+	$(CXX) -shared -o $(TARGET_DIR)/$(KMSCOREIMPL_TARGET) $(CFLAGS) $(KMSCOREIMPL_OBJS) $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOREIMPL_TARGET).a
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
