@@ -266,7 +266,21 @@ KMSCOREIMPL_LIBS= \
 KMSCOREPLUGINS_TARGET=libkmscoreplugins.dll
 
 KMSCOREPLUGINS_SRC= \
-
+./src/gst-plugins/kmscore.c \
+./src/gst-plugins/kmsagnosticbin.c \
+./src/gst-plugins/kmsagnosticbin3.c \
+./src/gst-plugins/kmsfilterelement.c \
+./src/gst-plugins/kmsaudiomixer.c \
+./src/gst-plugins/kmsaudiomixerbin.c \
+./src/gst-plugins/kmsbitratefilter.c \
+./src/gst-plugins/kmsbufferinjector.c \
+./src/gst-plugins/kmspassthrough.c \
+./src/gst-plugins/kmsdummysrc.c \
+./src/gst-plugins/kmsdummysink.c \
+./src/gst-plugins/kmsdummyduplex.c \
+./src/gst-plugins/kmsdummysdp.c \
+./src/gst-plugins/kmsdummyrtp.c \
+./src/gst-plugins/kmsdummyuri.c
 
 KMSCOREPLUGINS_LIBS= \
 
