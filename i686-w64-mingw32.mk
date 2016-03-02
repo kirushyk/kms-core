@@ -283,7 +283,9 @@ KMSCOREPLUGINS_SRC= \
 ./src/gst-plugins/kmsdummyuri.c
 
 KMSCOREPLUGINS_LIBS= \
-
+-L./build/ \
+-lkmssdpagent \
+-lkmsgstcommons \
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
