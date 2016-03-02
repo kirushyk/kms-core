@@ -5,6 +5,8 @@ TARGET_DIR=./build/
 CXXFLAGS=--std=gnu++17 -fpermissive
 
 CFLAGS= \
+-DPACKAGE="\"kms-core\"" \
+-DVERSION="\"6.4.0.3\"" \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/gstreamer-1.0 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/gstreamer-1.0/include \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/glib-2.0 \
