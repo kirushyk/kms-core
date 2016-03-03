@@ -291,6 +291,7 @@ KMSCOREPLUGINS_LIBS= \
 -L./build/ \
 -lkmssdpagent \
 -lkmsgstcommons \
+-lgstbase-1.0.dll \
 -lgstreamer-1.0 \
 -lgobject-2.0 \
 -lglib-2.0
