@@ -5,6 +5,7 @@ TARGET_DIR=./build/
 CXXFLAGS=--std=gnu++17 -fpermissive
 
 CFLAGS= \
+-DKURENTO_MODULES_DIR="\".\"" \
 -DPACKAGE="\"kms-core\"" \
 -DVERSION="\"6.4.1.6\"" \
 -Duint="unsigned" \
