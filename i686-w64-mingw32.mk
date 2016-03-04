@@ -6,7 +6,8 @@ CXXFLAGS=--std=gnu++17 -fpermissive
 
 CFLAGS= \
 -DPACKAGE="\"kms-core\"" \
--DVERSION="\"6.4.0.3\"" \
+-DVERSION="\"6.4.1.6\"" \
+-Duint="unsigned" \
 -DWIN32_LEAN_AND_MEAN=1 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/include/gstreamer-1.0 \
 -I/usr/i686-w64-mingw32/sys-root/mingw/lib/gstreamer-1.0/include \
