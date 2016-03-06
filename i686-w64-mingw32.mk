@@ -470,7 +470,7 @@ $(TARGET_DIR)/$(VP8PARSE_TARGET): $(VP8PARSE_OBJS)
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 %.o: %.cpp
-	$(CC) -c $(CFLAGS) $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CFLAGS) $(CXXFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
