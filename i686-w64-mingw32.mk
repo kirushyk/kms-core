@@ -206,27 +206,41 @@ KMSCOREINTERFACE_SRC= \
 KMSCOREIMPL_TARGET=libkmscoreimpl.dll
 
 KMSCOREIMPL_SRC= \
-#./src/server/implementation/DotGraph.cpp \
-./src/server/implementation/RegisterParent.cpp \
-./src/server/implementation/objects/ServerManagerImpl.cpp \
-./src/server/implementation/objects/PassThroughImpl.cpp \
-./src/server/implementation/objects/HubImpl.cpp \
-./src/server/implementation/objects/MediaPipelineImpl.cpp \
-./src/server/implementation/objects/SessionEndpointImpl.cpp \
-./src/server/implementation/objects/SdpEndpointImpl.cpp \
-./src/server/implementation/objects/HubPortImpl.cpp \
-./src/server/implementation/objects/MediaElementImpl.cpp \
-./src/server/implementation/objects/FilterImpl.cpp \
-./src/server/implementation/objects/UriEndpointImpl.cpp \
-./src/server/implementation/objects/MediaObjectImpl.cpp \
-./src/server/implementation/objects/BaseRtpEndpointImpl.cpp \
-./src/server/implementation/objects/EndpointImpl.cpp \
-./src/server/implementation/MediaSet.cpp \
+./src/server/implementation/EventHandler.cpp \
 ./src/server/implementation/Factory.cpp \
+./src/server/implementation/MediaSet.cpp \
 ./src/server/implementation/ModuleManager.cpp \
 ./src/server/implementation/WorkerPool.cpp \
 ./src/server/implementation/UUIDGenerator.cpp \
-./src/server/implementation/EventHandler.cpp
+./src/server/implementation/RegisterParent.cpp \
+./src/server/implementation/DotGraph.cpp \
+./src/server/implementation/objects/MediaObjectImpl.cpp \
+./src/server/implementation/objects/ServerManagerImpl.cpp \
+./src/server/implementation/objects/SessionEndpointImpl.cpp \
+./src/server/implementation/objects/HubImpl.cpp \
+./src/server/implementation/objects/FilterImpl.cpp \
+./src/server/implementation/objects/EndpointImpl.cpp \
+./src/server/implementation/objects/HubPortImpl.cpp \
+./src/server/implementation/objects/PassThroughImpl.cpp \
+./src/server/implementation/objects/UriEndpointImpl.cpp \
+./src/server/implementation/objects/MediaPipelineImpl.cpp \
+./src/server/implementation/objects/SdpEndpointImpl.cpp \
+./src/server/implementation/objects/BaseRtpEndpointImpl.cpp \
+./src/server/implementation/objects/MediaElementImpl.cpp \
+./win32/server/implementation/generated-cpp/SerializerExpanderCore.cpp \
+./win32/server/implementation/generated-cpp/MediaObjectImplInternal.cpp \
+./win32/server/implementation/generated-cpp/ServerManagerImplInternal.cpp \
+./win32/server/implementation/generated-cpp/SessionEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/HubImplInternal.cpp \
+./win32/server/implementation/generated-cpp/FilterImplInternal.cpp \
+./win32/server/implementation/generated-cpp/EndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/HubPortImplInternal.cpp \
+./win32/server/implementation/generated-cpp/PassThroughImplInternal.cpp \
+./win32/server/implementation/generated-cpp/UriEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/MediaPipelineImplInternal.cpp \
+./win32/server/implementation/generated-cpp/SdpEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/BaseRtpEndpointImplInternal.cpp \
+./win32/server/implementation/generated-cpp/MediaElementImplInternal.cpp
 
 KMSCOREIMPL_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
