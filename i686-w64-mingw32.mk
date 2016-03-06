@@ -203,15 +203,6 @@ KMSCOREINTERFACE_SRC= \
 ./win32/server/interface/generated-cpp/CodecConfiguration.cpp \
 ./win32/server/interface/generated-cpp/RembParams.cpp
 
-KMSCOREINTERFACE_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L../kms-jsonrpc/build/ \
--L../jsoncpp/build/ \
--lkmsjsoncpp.dll \
--lkmsjsonrpc.dll
-
 KMSCOREIMPL_TARGET=libkmscoreimpl.dll
 
 KMSCOREIMPL_SRC= \
@@ -424,10 +415,11 @@ KMSCOREPLUGINS_OBJS=$(KMSCOREPLUGINS_SRC:.c=.o)
 all: \
 $(TARGET_DIR)/$(SDPAGENT_TARGET) \
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET) \
-$(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET)
+$(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET) \
+$(TARGET_DIR)/$(KMSCOREIMPL_TARGET) \
 
 #$(TARGET_DIR)/$(KMSCOREMODULE_TARGET) \
-#$(TARGET_DIR)/$(KMSCOREIMPL_TARGET) \
+
 #$(TARGET_DIR)/$(KMSCOREPLUGINS_TARGET) \
 #$(TARGET_DIR)/$(VP8PARSE_TARGET)
 
