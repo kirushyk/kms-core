@@ -144,8 +144,6 @@ KMSCOREIMPL_SRC= \
 ./src/server/implementation/UUIDGenerator.cpp \
 ./src/server/implementation/EventHandler.cpp \
 \
-./win32/server/module_version.cpp \
-./win32/server/module_name.cpp \
 ./win32/server/implementation/generated-cpp/SessionEndpointImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/MediaElementImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/MediaPipelineImplInternal.cpp \
@@ -160,7 +158,6 @@ KMSCOREIMPL_SRC= \
 ./win32/server/implementation/generated-cpp/ServerManagerImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/MediaObjectImplInternal.cpp \
 ./win32/server/implementation/generated-cpp/BaseRtpEndpointImplInternal.cpp \
-./win32/server/implementation/generated-cpp/Module.cpp \
 ./win32/server/interface/generated-cpp/RTCStatsIceCandidatePairState.cpp \
 ./win32/server/interface/generated-cpp/RTCTransportStats.cpp \
 ./win32/server/interface/generated-cpp/RaiseBase.cpp \
@@ -238,10 +235,13 @@ KMSCOREIMPL_SRC= \
 ./win32/server/interface/generated-cpp/ServerManagerInternal.cpp \
 ./win32/server/interface/generated-cpp/VideoCaps.cpp \
 ./win32/server/interface/generated-cpp/BaseRtpEndpoint.cpp \
-./win32/server/interface/generated-cpp/MediaSessionStarted.cpp \
-./win32/server/module_generation_time.cpp
+./win32/server/interface/generated-cpp/MediaSessionStarted.cpp
+#./win32/server/module_version.cpp \
+#./win32/server/module_name.cpp \
+#./win32/server/module_generation_time.cpp
 #./win32/server/module_descriptor.cpp \
 #./src/server/implementation/objects/MediaPadImpl.cpp \
+#./win32/server/implementation/generated-cpp/Module.cpp \
 
 KMSCOREIMPL_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
@@ -312,6 +312,15 @@ VP8PARSE_LIBS= \
 -lgstreamer-1.0 \
 -lgobject-2.0 \
 -lglib-2.0
+
+KMSCOREMODULE_TARGET=libkmscoremodule.dll
+
+KMSCOREMODULE_SRC= \
+./win32/server/implementation/generated-cpp/Module.cpp \
+./win32/server/module_generation_time.cpp \
+./win32/server/module_version.cpp \
+./win32/server/module_name.cpp \
+./win32/server/module_descriptor.cpp
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
