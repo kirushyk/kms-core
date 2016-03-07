@@ -262,6 +262,7 @@ KMSCOREIMPL_LIBS= \
 -lkmsjsonrpc.dll \
 -lgstreamer-1.0 \
 -lws2_32 \
+-lgstvideo-1.0 \
 -lgstsdp-1.0.dll \
 -lglibmm-2.4 \
 -lgobject-2.0 \
