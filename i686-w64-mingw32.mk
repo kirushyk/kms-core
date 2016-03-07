@@ -254,6 +254,9 @@ KMSCOREIMPL_LIBS= \
 -L../kms-jsonrpc/build/ \
 -L../jsoncpp/build/ \
 -L./build/ \
+-lsdputils \
+-lkmsutils \
+-lkmsrefstruct \
 -lsigc-2.0 \
 -lkmsjsoncpp.dll \
 -lkmsjsonrpc.dll \
@@ -377,7 +380,6 @@ KMSCOREMODULE_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/
-
 
 KMSCOREPLUGINS_TARGET=libkmscoreplugins.dll
 
