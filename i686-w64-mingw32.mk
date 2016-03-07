@@ -31,6 +31,13 @@ CFLAGS= \
 -I./src/server/implementation/objects/ \
 -I./win32
 
+KMSUTILS_TARGET=libkmsutils.a
+KMSUTILS_SRC=./src/gst-plugins/commons/kmsutils.c
+SDPUTILS_TARGET=libsdputils.a
+SDPUTILS_SRC=./src/gst-plugins/commons/sdp_utils.c
+KMSREFSTRUCT_TARGET=libkmsrefstruct.a
+KMSREFSTRUCT_SRC=./src/gst-plugins/commons/kmsrefstruct.c
+
 SDPAGENT_TARGET=libkmssdpagent.dll
 
 SDPAGENT_SRC= \
@@ -56,9 +63,6 @@ SDPAGENT_SRC= \
 ./src/gst-plugins/commons/sdpagent/kmsisdppayloadmanager.c \
 ./src/gst-plugins/commons/sdpagent/kmssdprejectmediahandler.c \
 \
-./src/gst-plugins/commons/kmsrefstruct.c \
-./src/gst-plugins/commons/sdp_utils.c \
-./src/gst-plugins/commons/kmsutils.c \
 ./win32/kms-sdp-agent-marshal.c
 
 SDPAGENT_LIBS= \
@@ -99,9 +103,6 @@ KMSCOMMONS_SRC= \
 ./src/gst-plugins/commons/kmsparsetreebin.c \
 ./src/gst-plugins/commons/kmslist.c \
 \
-./src/gst-plugins/commons/kmsrefstruct.c \
-./src/gst-plugins/commons/sdp_utils.c \
-./src/gst-plugins/commons/kmsutils.c \
 ./win32/kms-core-enumtypes.c \
 ./win32/kms-core-marshal.c
 
@@ -427,6 +428,9 @@ KMSCOREMODULE_OBJS=$(KMSCOREMODULE_SRC:.cpp=.o)
 KMSCOREPLUGINS_OBJS=$(KMSCOREPLUGINS_SRC:.c=.o)
 
 all: \
+$(TARGET_DIR)/$(KMSUTILS_TARGET) \
+$(TARGET_DIR)/$(SDPUTILS_TARGET) \
+$(TARGET_DIR)/$(KMSREFSTRUCT_TARGET) \
 $(TARGET_DIR)/$(SDPAGENT_TARGET) \
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET) \
 $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET) \
@@ -436,6 +440,24 @@ $(TARGET_DIR)/$(KMSCOREIMPL_TARGET) \
 
 #$(TARGET_DIR)/$(KMSCOREPLUGINS_TARGET) \
 #$(TARGET_DIR)/$(VP8PARSE_TARGET)
+
+$(TARGET_DIR)/$(KMSUTILS_TARGET): $(KMSUTILS_SRC)
+	mkdir -p $(TARGET_DIR)
+	$(CC) -c $(CFLAGS) -o $(TARGET_DIR)/$(KMSUTILS_TARGET).o $(KMSUTILS_SRC)
+	$(AR) cr $(TARGET_DIR)/$(KMSUTILS_TARGET) $(TARGET_DIR)/$(KMSUTILS_TARGET).o
+	$(RANLIB) $(TARGET_DIR)/$(KMSUTILS_TARGET)
+
+$(TARGET_DIR)/$(SDPUTILS_TARGET): $(SDPUTILS_SRC)
+	mkdir -p $(TARGET_DIR)
+	$(CC) -c $(CFLAGS) -o $(TARGET_DIR)/$(SDPUTILS_TARGET).o $(SDPUTILS_SRC)
+	$(AR) cr $(TARGET_DIR)/$(SDPUTILS_TARGET) $(TARGET_DIR)/$(SDPUTILS_TARGET).o
+	$(RANLIB) $(TARGET_DIR)/$(SDPUTILS_TARGET)
+
+$(TARGET_DIR)/$(KMSREFSTRUCT_TARGET): $(KMSREFSTRUCT_SRC)
+	mkdir -p $(TARGET_DIR)
+	$(CC) -c $(CFLAGS) -o $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET).o $(KMSREFSTRUCT_SRC)
+	$(AR) cr $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET) $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET).o
+	$(RANLIB) $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
@@ -474,6 +496,9 @@ $(TARGET_DIR)/$(VP8PARSE_TARGET): $(VP8PARSE_OBJS)
 
 .PHONY: clean
 clean:
+	rm -f $(TARGET_DIR)/$(KMSUTILS_TARGET)
+	rm -f $(TARGET_DIR)/$(SDPUTILS_TARGET)
+	rm -f $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET)
 	rm -f $(SDPAGENT_OBJS)
 	rm -f $(TARGET_DIR)/$(SDPAGENT_TARGET)
 	rm -f $(TARGET_DIR)/$(SDPAGENT_TARGET).a
