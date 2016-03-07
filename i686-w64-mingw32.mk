@@ -257,6 +257,7 @@ KMSCOREIMPL_LIBS= \
 -lsdputils \
 -lkmsutils \
 -lkmsrefstruct \
+-lkmscoreinterface \
 -lsigc-2.0 \
 -lkmsjsoncpp.dll \
 -lkmsjsonrpc.dll \
