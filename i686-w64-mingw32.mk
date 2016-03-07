@@ -299,9 +299,11 @@ KMSCOREMODULE_LIBS= \
 -lkmsutils \
 -lkmsrefstruct \
 -lkmscoreinterface \
+-lkmsjsoncpp.dll \
+-lkmsjsonrpc.dll \
 -lglibmm-2.4 \
 -lgobject-2.0 \
--lglib-2.0 \
+-lglib-2.0
 
 KMSCOREPLUGINS_TARGET=libkmscoreplugins.dll
 
