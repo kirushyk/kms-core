@@ -266,6 +266,8 @@ KMSCOREIMPL_LIBS= \
 -lglibmm-2.4 \
 -lgobject-2.0 \
 -lglib-2.0 \
+-lrpcrt4 \
+-lole32 \
 -lkmssdpagent \
 -lkmsgstcommons \
 -lboost_system-mt \
