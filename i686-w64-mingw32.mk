@@ -69,6 +69,10 @@ SDPAGENT_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
+-L./build/ \
+-lsdputils \
+-lkmsutils \
+-lkmsrefstruct \
 -lgstvideo-1.0.dll \
 -lgstsdp-1.0.dll \
 -lgstreamer-1.0 \
