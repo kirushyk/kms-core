@@ -391,32 +391,32 @@ $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET): $(KMSREFSTRUCT_SRC)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(SDPAGENT_LIBS) -Wl,--out-implib,$@.a
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(SDPAGENT_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(KMSCOMMONS_LIBS) -Wl,--out-implib,$@.a
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(KMSCOMMONS_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET): $(KMSCOREINTERFACE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(AR) cr $@ $<
+	$(AR) cr $@ $^
 	$(RANLIB) $@
 
 $(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CXX) -shared -o $@ $(CFLAGS) $< $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$@.a
+	$(CXX) -shared -o $@ $(CFLAGS) $^ $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREMODULE_TARGET): $(KMSCOREMODULE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CXX) -shared -o $@ $(CFLAGS) $< $(KMSCOREMODULE_LIBS) -Wl,--out-implib,$@.a
+	$(CXX) -shared -o $@ $(CFLAGS) $^ $(KMSCOREMODULE_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREPLUGINS_TARGET): $(KMSCOREPLUGINS_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(KMSCOREPLUGINS_LIBS)
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(KMSCOREPLUGINS_LIBS)
 
 $(TARGET_DIR)/$(VP8PARSE_TARGET): $(VP8PARSE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(VP8PARSE_LIBS)
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(VP8PARSE_LIBS)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
