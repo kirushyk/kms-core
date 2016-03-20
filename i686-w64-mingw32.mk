@@ -391,15 +391,15 @@ $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET): $(KMSREFSTRUCT_SRC)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(SDPAGENT_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(SDPAGENT_TARGET).a
+	$(CC) -shared -o $@ $(CFLAGS) $< $(SDPAGENT_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $< $(KMSCOMMONS_LIBS) -Wl,--out-implib,$(TARGET_DIR)/$(KMSCOMMONS_TARGET).a
+	$(CC) -shared -o $@ $(CFLAGS) $< $(KMSCOMMONS_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET): $(KMSCOREINTERFACE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(AR) cr $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET) $<
+	$(AR) cr $@ $<
 	$(RANLIB) $@
 
 $(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
