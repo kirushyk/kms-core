@@ -347,9 +347,13 @@ VP8PARSE_LIBS= \
 -L/usr/i686-w64-mingw32/sys-root/mingw/lib \
 -L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
 -L/usr/i686-w64-mingw32/lib/ \
+-L../libvpx/ \
 -lgstreamer-1.0 \
+-lgstbase-1.0.dll \
+-lgstvideo-1.0.dll \
 -lgobject-2.0 \
--lglib-2.0
+-lglib-2.0 \
+-lvpx
 
 SDPAGENT_OBJS=$(SDPAGENT_SRC:.c=.o)
 KMSCOMMONS_OBJS=$(KMSCOMMONS_SRC:.c=.o)
