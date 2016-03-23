@@ -37,6 +37,7 @@ LIBS=\
 -L/usr/i686-w64-mingw32/lib/ \
 -L../kms-jsonrpc/build/ \
 -L../jsoncpp/build/ \
+-L../libvpx/ \
 -L./build/
 
 KMSUTILS_TARGET=libkmsutils.a
