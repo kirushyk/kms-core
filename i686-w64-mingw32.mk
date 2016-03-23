@@ -31,6 +31,14 @@ CFLAGS= \
 -I./src/server/implementation/objects/ \
 -I./win32
 
+LIBS=\
+-L/usr/i686-w64-mingw32/sys-root/mingw/lib \
+-L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
+-L/usr/i686-w64-mingw32/lib/ \
+-L../kms-jsonrpc/build/ \
+-L../jsoncpp/build/ \
+-L./build/
+
 KMSUTILS_TARGET=libkmsutils.a
 KMSUTILS_SRC=./src/gst-plugins/commons/kmsutils.c
 SDPUTILS_TARGET=libsdputils.a
@@ -66,10 +74,6 @@ SDPAGENT_SRC= \
 ./win32/kms-sdp-agent-marshal.c
 
 SDPAGENT_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L./build/ \
 -lsdputils \
 -lkmsutils \
 -lkmsrefstruct \
@@ -111,10 +115,6 @@ KMSCOMMONS_SRC= \
 ./win32/kms-core-marshal.c
 
 KMSCOMMONS_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L./build/ \
 -lkmssdpagent \
 -lgstpbutils-1.0.dll \
 -lgstvideo-1.0.dll \
@@ -248,12 +248,6 @@ KMSCOREIMPL_SRC= \
 ./win32/server/implementation/generated-cpp/MediaElementImplInternal.cpp
 
 KMSCOREIMPL_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L../kms-jsonrpc/build/ \
--L../jsoncpp/build/ \
--L./build/ \
 -lsdputils \
 -lkmsutils \
 -lkmsrefstruct \
@@ -289,12 +283,6 @@ KMSCOREMODULE_SRC= \
 ./win32/server/module_descriptor.cpp
 
 KMSCOREMODULE_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L../kms-jsonrpc/build/ \
--L../jsoncpp/build/ \
--L./build/ \
 -lsdputils \
 -lkmsutils \
 -lkmsrefstruct \
@@ -326,10 +314,6 @@ KMSCOREPLUGINS_SRC= \
 ./src/gst-plugins/kmsdummyuri.c
 
 KMSCOREPLUGINS_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L./build/ \
 -lkmssdpagent \
 -lkmsgstcommons \
 -lgstbase-1.0.dll \
@@ -344,10 +328,6 @@ src/gst-plugins/vp8parse/kmsvp8parse.c \
 src/gst-plugins/vp8parse/vp8parse.c
 
 VP8PARSE_LIBS= \
--L/usr/i686-w64-mingw32/sys-root/mingw/lib \
--L/usr/lib/gcc/i686-w64-mingw32/5.2.0 \
--L/usr/i686-w64-mingw32/lib/ \
--L../libvpx/ \
 -lgstreamer-1.0 \
 -lgstbase-1.0.dll \
 -lgstvideo-1.0.dll \
@@ -395,11 +375,11 @@ $(TARGET_DIR)/$(KMSREFSTRUCT_TARGET): $(KMSREFSTRUCT_SRC)
 
 $(TARGET_DIR)/$(SDPAGENT_TARGET): $(SDPAGENT_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $^ $(SDPAGENT_LIBS) -Wl,--out-implib,$@.a
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(SDPAGENT_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOMMONS_TARGET): $(KMSCOMMONS_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $^ $(KMSCOMMONS_LIBS) -Wl,--out-implib,$@.a
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(KMSCOMMONS_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET): $(KMSCOREINTERFACE_OBJS)
 	mkdir -p $(TARGET_DIR)
@@ -408,19 +388,19 @@ $(TARGET_DIR)/$(KMSCOREINTERFACE_TARGET): $(KMSCOREINTERFACE_OBJS)
 
 $(TARGET_DIR)/$(KMSCOREIMPL_TARGET): $(KMSCOREIMPL_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CXX) -shared -o $@ $(CFLAGS) $^ $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$@.a
+	$(CXX) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(KMSCOREIMPL_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREMODULE_TARGET): $(KMSCOREMODULE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CXX) -shared -o $@ $(CFLAGS) $^ $(KMSCOREMODULE_LIBS) -Wl,--out-implib,$@.a
+	$(CXX) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(KMSCOREMODULE_LIBS) -Wl,--out-implib,$@.a
 
 $(TARGET_DIR)/$(KMSCOREPLUGINS_TARGET): $(KMSCOREPLUGINS_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $^ $(KMSCOREPLUGINS_LIBS)
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(KMSCOREPLUGINS_LIBS)
 
 $(TARGET_DIR)/$(VP8PARSE_TARGET): $(VP8PARSE_OBJS)
 	mkdir -p $(TARGET_DIR)
-	$(CC) -shared -o $@ $(CFLAGS) $^ $(VP8PARSE_LIBS)
+	$(CC) -shared -o $@ $(CFLAGS) $^ $(LIBS) $(VP8PARSE_LIBS)
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
