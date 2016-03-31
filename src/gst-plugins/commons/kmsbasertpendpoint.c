@@ -586,7 +586,7 @@ kms_base_rtp_endpoint_create_rtp_session (KmsBaseRtpEndpoint * self,
 {
   GstElement *rtpbin = self->priv->rtpbin;
   KmsRTPSessionStats *rtp_stats;
-  GObject *rtpsession;
+  GObject *rtpsession = NULL;
   GstPad *pad;
 
   /* Create RtpSession requesting the pad */
@@ -649,7 +649,7 @@ kms_base_rtp_endpoint_configure_rtp_media (KmsBaseRtpEndpoint * self,
   const gchar *rtpbin_pad_name = NULL;
   GstSDPDirection dir;
   guint session_id;
-  GObject *rtpsession;
+  GObject *rtpsession = NULL;
   GstStructure *sdes = NULL;
   const gchar *cname;
   guint ssrc;
