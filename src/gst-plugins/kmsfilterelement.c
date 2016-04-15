@@ -92,8 +92,8 @@ kms_filter_element_connect_filter (KmsFilterElement * self,
 
     gst_bin_add (GST_BIN (self), queue);
 
-    g_object_set (queue, "max-size-time", LEAKY_TIME, "leaky",
-        2 /*downstream */ , NULL);
+    g_object_set (queue, "max-size-time", LEAKY_TIME, NULL);
+    g_object_set (queue, "leaky", GST_QUEUE_LEAK_DOWNSTREAM, NULL);
 
     gst_element_link (queue, filter);
     gst_element_link (filter, agnosticbin);
