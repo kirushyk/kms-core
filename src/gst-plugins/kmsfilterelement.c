@@ -25,7 +25,7 @@
 #include "kmsfiltertype.h"
 
 #define PLUGIN_NAME "filterelement"
-#define LEAKY_TIME 200000       /*200 ms */
+#define LEAKY_TIME 200000ul       /*200 ms */
 
 #define DEFAULT_FILTER_TYPE KMS_FILTER_TYPE_AUTODETECT
 
