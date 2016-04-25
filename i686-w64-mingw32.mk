@@ -1,8 +1,14 @@
 AR=i686-w64-mingw32-ar
-CC=i686-w64-mingw32-gcc -g -o0
-CXX=i686-w64-mingw32-g++ -g -o0
+CC=i686-w64-mingw32-gcc
+CXX=i686-w64-mingw32-g++
 RANLIB=i686-w64-mingw32-ranlib
 TARGET_DIR=./build/
+
+ifdef DEBUG
+CC += -g -o0
+CXX += -g -o0
+TARGET_DIR = ./build/debug/
+endif
 
 CXXFLAGS=--std=gnu++17 -fpermissive
 
