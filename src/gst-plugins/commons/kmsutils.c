@@ -934,6 +934,7 @@ void
 kms_utils_set_uuid (GObject * obj)
 {
   gchar *uuid_str;
+
 #ifdef _WIN32
   RPC_CSTR uuid_rpc_str;
   GUID uuid;
@@ -944,7 +945,7 @@ kms_utils_set_uuid (GObject * obj)
 #ifdef _WIN32
   CoCreateGuid (&uuid);
   UuidToStringA (&uuid, &uuid_rpc_str);
-  uuid_str = g_strdup (uuid_rpc_str);
+  uuid_str = g_strdup ((gchar *) uuid_rpc_str);
   RpcStringFree (&uuid_rpc_str);
 #else
   uuid_generate (uuid);
