@@ -462,8 +462,13 @@ function (generate_kurento_libraries)
   set_target_properties(${VALUE_CODE_IMPLEMENTATION_LIB}interface PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    COMPILE_FLAGS "-fPIC"
   )
+
+  if (NOT (${CMAKE_SYSTEM_NAME} MATCHES "Windows"))
+    set_target_properties(${VALUE_CODE_IMPLEMENTATION_LIB}interface PROPERTIES
+      COMPILE_FLAGS "-fPIC"
+    )
+  endif ()
 
   install(TARGETS ${VALUE_CODE_IMPLEMENTATION_LIB}interface
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
