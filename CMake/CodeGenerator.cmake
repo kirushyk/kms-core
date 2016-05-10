@@ -431,7 +431,7 @@ function (generate_kurento_libraries)
   )
 
   #Generate source for internal interface files
-  add_library (${VALUE_CODE_IMPLEMENTATION_LIB}interface STATIC
+  add_library (${VALUE_CODE_IMPLEMENTATION_LIB}interface
     ${PARAM_INTERFACE_LIB_EXTRA_SOURCES}
     ${PARAM_INTERFACE_LIB_EXTRA_HEADERS}
     ${INTERFACE_INTERNAL_GENERATED_SOURCES}
