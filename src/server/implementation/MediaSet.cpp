@@ -90,7 +90,7 @@ MediaSet::deleteMediaSet()
       cv.notify_all();
     });
 
-    GST_INFO ("Destroying %ld pipelines that are already alive", pipes.size() );
+    GST_INFO ("Destroying %u pipelines that are already alive", pipes.size() );
 
     for (auto it : pipes) {
       mediaSet->release (it);
