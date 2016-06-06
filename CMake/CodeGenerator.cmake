@@ -556,6 +556,10 @@ function (generate_kurento_libraries)
     ${VALUE_CODE_IMPLEMENTATION_LIB}interface
   )
 
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set (DEPENDENCIES_LIBRARIES "${DEPENDENCIES_LIBRARIES} libws2_32.a")
+  endif ()
+
   target_link_libraries (${VALUE_CODE_IMPLEMENTATION_LIB}impl
     ${DEPENDENCIES_LIBRARIES}
     ${PARAM_SERVER_IMPL_LIB_EXTRA_LIBRARIES}
@@ -676,8 +680,8 @@ function (generate_kurento_libraries)
   )
 
   target_link_libraries (${VALUE_CODE_IMPLEMENTATION_LIB}module
-    ${VALUE_CODE_IMPLEMENTATION_LIB}impl
     ${VALUE_CODE_IMPLEMENTATION_LIB}interface
+    ${VALUE_CODE_IMPLEMENTATION_LIB}impl
     ${PARAM_MODULE_EXTRA_LIBRARIES}
   )
 
