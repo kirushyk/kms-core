@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 2.8)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32_LEAN_AND_MEAN=1")
+endif ()
+
 include (CodeGenerator)
 
 set (KMS_CORE_INTERFACE_SOURCES
@@ -35,10 +39,6 @@ set (KMS_CORE_IMPL_HEADERS
 )
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32_LEAN_AND_MEAN=1")
-endif ()
 
 generate_code (
   MODELS ${CMAKE_CURRENT_SOURCE_DIR}/interface
