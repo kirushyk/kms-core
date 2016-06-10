@@ -557,7 +557,7 @@ function (generate_kurento_libraries)
   )
 
   if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (DEPENDENCIES_LIBRARIES "${DEPENDENCIES_LIBRARIES} libws2_32.a")
+    set (DEPENDENCIES_LIBRARIES libws2_32.a ${DEPENDENCIES_LIBRARIES})
   endif ()
 
   target_link_libraries (${VALUE_CODE_IMPLEMENTATION_LIB}impl
