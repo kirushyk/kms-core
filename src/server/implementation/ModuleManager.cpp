@@ -47,9 +47,7 @@ std::string getWin32ModulesDir()
   }
 
   *++finish = '\0';
-  std::cout << path << std::endl;
   std::string a = std::string (path) + "\\lib\\kurento\\modules\\";
-  std::cout << a << std::endl;
   return a;
 }
 #define KURENTO_MODULES_DIR getWin32ModulesDir().c_str()
@@ -70,7 +68,6 @@ typedef const char * (*GetGenerationTimeFunc) ();
 int
 ModuleManager::loadModule (std::string modulePath)
 {
-  std::cout << "LM" << std::endl;
   const kurento::FactoryRegistrar *registrar;
   void *registrarFactory, *getVersion = NULL, *getName = NULL,
                            *getDescriptor = NULL, *getGenerationTime = NULL;
