@@ -26,7 +26,33 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define GST_DEFAULT_NAME "KurentoModuleManager"
 
 #if _WIN32
+#include <iostream>
+#include <string>
+#include <string.h>
+#include <windows.h>
+#include <shlwapi.h>
 #define MODULE_EXTENSION_STRING ".dll"
+#undef KURENTO_MODULES_DIR
+std::string getWin32ModulesDir()
+{
+  HMODULE hModule = GetModuleHandleA (NULL);
+  static char path[MAX_PATH];
+  GetModuleFileNameA (hModule, path, MAX_PATH);
+  char *finish = path + strlen (path);
+
+  for (int bsc = 0; (bsc < 2) && (finish > path); finish--) {
+    if (*finish == '\\') {
+      bsc++;
+    }
+  }
+
+  *++finish = '\0';
+  std::cout << path << std::endl;
+  std::string a = std::string (path) + "\\lib\\kurento\\modules\\";
+  std::cout << a << std::endl;
+  return a;
+}
+#define KURENTO_MODULES_DIR getWin32ModulesDir().c_str()
 #elif __APPLE__
 #define MODULE_EXTENSION_STRING ".dylib"
 #else
@@ -44,6 +70,7 @@ typedef const char * (*GetGenerationTimeFunc) ();
 int
 ModuleManager::loadModule (std::string modulePath)
 {
+  std::cout << "LM" << std::endl;
   const kurento::FactoryRegistrar *registrar;
   void *registrarFactory, *getVersion = NULL, *getName = NULL,
                            *getDescriptor = NULL, *getGenerationTime = NULL;
