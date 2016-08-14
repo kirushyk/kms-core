@@ -1,3 +1,19 @@
+/*
+ * (C) Copyright 2016 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 #include <gst/gst.h>
 #include "MediaType.hpp"
 #include "MediaLatencyStat.hpp"
@@ -36,6 +52,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 namespace kurento
 {
 
+const static std::string DEFAULT = "default";
+
 class ElementConnectionDataInternal
 {
 public:
@@ -43,7 +61,8 @@ public:
                                  std::shared_ptr<MediaElement> sink,
                                  std::shared_ptr<MediaType> type,
                                  const std::string &sourceDescription,
-                                 const std::string &sinkDescription) {
+                                 const std::string &sinkDescription)
+  {
     this->source = source;
     this->sink = sink;
     this->type = type;
@@ -53,13 +72,15 @@ public:
     setSinkPadName ();
   }
 
-  ~ElementConnectionDataInternal() {
+  ~ElementConnectionDataInternal()
+  {
     if (sourcePadName != NULL) {
       free (sourcePadName);
     }
   }
 
-  ElementConnectionDataInternal (std::shared_ptr<ElementConnectionData> data) {
+  ElementConnectionDataInternal (std::shared_ptr<ElementConnectionData> data)
+  {
     this->source = data->getSource();
     this->sink = data->getSink();
     this->type = data->getType();
@@ -69,9 +90,10 @@ public:
     setSinkPadName ();
   }
 
-  void setSinkPadName() {
-    std::string desc = "_" + (sourceDescription.empty () ?
-                              KMS_DEFAULT_MEDIA_DESCRIPTION : sourceDescription);
+  void setSinkPadName()
+  {
+    std::string desc = "_" + (sinkDescription.empty () ?
+                              KMS_DEFAULT_MEDIA_DESCRIPTION : sinkDescription);
 
     switch (type->getValue () ) {
     case MediaType::AUDIO:
@@ -88,7 +110,8 @@ public:
     }
   }
 
-  void setSourcePadName (gchar *padName) {
+  void setSourcePadName (gchar *padName)
+  {
     if (this->sourcePadName != NULL) {
       GST_WARNING ("Resetting padName for connection");
 
@@ -100,11 +123,13 @@ public:
     this->sourcePadName = padName;
   }
 
-  const gchar *getSourcePadName () {
+  const gchar *getSourcePadName ()
+  {
     return sourcePadName;
   }
 
-  std::shared_ptr<MediaElementImpl> getSource () {
+  std::shared_ptr<MediaElementImpl> getSource ()
+  {
     try {
       return std::dynamic_pointer_cast <MediaElementImpl> (source.lock() );
     } catch (std::bad_cast) {
@@ -113,7 +138,8 @@ public:
     }
   }
 
-  std::shared_ptr<MediaElementImpl> getSink () {
+  std::shared_ptr<MediaElementImpl> getSink ()
+  {
     try {
       return std::dynamic_pointer_cast <MediaElementImpl> (sink.lock() );
     } catch (std::bad_cast) {
@@ -122,11 +148,13 @@ public:
     }
   }
 
-  std::string getSinkPadName () {
+  std::string getSinkPadName ()
+  {
     return sinkPadName;
   }
 
-  GstPad *getSinkPad () {
+  GstPad *getSinkPad ()
+  {
     std::shared_ptr <MediaElementImpl> sinkLocked = getSink ();
 
     if (!sinkLocked) {
@@ -137,7 +165,8 @@ public:
                                        getSinkPadName ().c_str() );
   }
 
-  GstPad *getSourcePad () {
+  GstPad *getSourcePad ()
+  {
     std::shared_ptr <MediaElementImpl> sourceLocked = getSource ();
 
     if (!sourceLocked || sourcePadName == NULL) {
@@ -148,7 +177,8 @@ public:
                                        sourcePadName);
   }
 
-  std::shared_ptr<ElementConnectionData> toInterface () {
+  std::shared_ptr<ElementConnectionData> toInterface ()
+  {
     std::shared_ptr<ElementConnectionData> iface (new ElementConnectionData (
           source.lock(), sink.lock(), type, sourceDescription, sinkDescription) );
 
@@ -172,31 +202,6 @@ private:
   std::string sinkDescription;
   std::string sinkPadName;
   gchar *sourcePadName;
-};
-
-class MediaFlowData
-{
-public:
-  MediaFlowData (std::shared_ptr<MediaType> type,
-                 const std::string &description,
-                 std::shared_ptr<MediaFlowState> state) {
-    this->type = type;
-    this->state = state;
-    this->description = description;
-  }
-
-  void setState (std::shared_ptr<MediaFlowState> state ) {
-    this->state = state;
-  }
-
-  std::shared_ptr<MediaFlowState>  getState () {
-    return this->state;
-  }
-
-private:
-  std::shared_ptr<MediaType> type;
-  std::shared_ptr<MediaFlowState> state;
-  std::string description;
 };
 
 static KmsElementPadType
@@ -308,18 +313,24 @@ _media_element_pad_added (GstElement *elem, GstPad *pad, gpointer data)
         continue;
       }
 
-      //FIXME: This method of pad recognition should change as well as pad names
+      std::string description;
 
-      if (g_str_has_prefix (GST_OBJECT_NAME (pad), "audio") ) {
+      if (g_str_has_prefix (GST_OBJECT_NAME (pad), "audio_") ) {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::AUDIO) );
-      } else if (g_str_has_prefix (GST_OBJECT_NAME (pad), "video") ) {
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("audio_src") );
+      } else if (g_str_has_prefix (GST_OBJECT_NAME (pad), "video_") ) {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::VIDEO) );
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("video_src") );
       } else {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::DATA) );
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("data_src") );
       }
 
+      auto pos = description.find_last_of ("_");
+      description.erase (pos);
+
       try {
-        auto connections = self->sinks.at (type).at ("");
+        auto connections = self->sinks.at (type).at (description);
 
         for (auto it : connections) {
           if (g_strcmp0 (GST_OBJECT_NAME (pad), it->getSourcePadName() ) == 0) {
@@ -350,16 +361,22 @@ _media_element_pad_added (GstElement *elem, GstPad *pad, gpointer data)
         continue;
       }
 
-      if (g_str_has_prefix (GST_OBJECT_NAME (pad), "sink_audio") ) {
+      std::string description;
+
+      if (g_str_has_prefix (GST_OBJECT_NAME (pad), "sink_audio_") ) {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::AUDIO) );
-      } else if (g_str_has_prefix (GST_OBJECT_NAME (pad), "sink_video") ) {
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("sink_audio") );
+      } else if (g_str_has_prefix (GST_OBJECT_NAME (pad), "sink_video_") ) {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::VIDEO) );
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("sink_video") );
       } else {
         type = std::shared_ptr<MediaType> (new MediaType (MediaType::DATA) );
+        description = std::string (GST_OBJECT_NAME (pad) + sizeof ("sink_data") );
       }
 
       try {
-        auto sourceData = self->sources.at (type).at ("");
+        auto sourceData = self->sources.at (type).at (description);
+
         auto source = sourceData->getSource();
 
         if (source) {
@@ -792,24 +809,32 @@ void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink)
 {
   // Until mediaDescriptions are really used, we just connect audio an video
   connect (sink, std::shared_ptr<MediaType> (new MediaType (MediaType::AUDIO) ),
-           "", "");
+           DEFAULT, DEFAULT);
   connect (sink, std::shared_ptr<MediaType> (new MediaType (MediaType::VIDEO) ),
-           "", "");
+           DEFAULT, DEFAULT);
   connect (sink, std::shared_ptr<MediaType> (new MediaType (MediaType::DATA) ),
-           "", "");
+           DEFAULT, DEFAULT);
 }
 
 void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
                                 std::shared_ptr<MediaType> mediaType)
 {
-  connect (sink, mediaType, "", "");
+  connect (sink, mediaType, DEFAULT, DEFAULT);
 }
 
 void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
                                 std::shared_ptr<MediaType> mediaType,
                                 const std::string &sourceMediaDescription)
 {
-  connect (sink, mediaType, sourceMediaDescription, "");
+  connect (sink, mediaType, sourceMediaDescription, DEFAULT);
+}
+
+void MediaElementImpl::prepareSinkConnection (std::shared_ptr<MediaElement> src,
+    std::shared_ptr< MediaType > mediaType,
+    const std::string &sourceMediaDescription,
+    const std::string &sinkMediaDescription)
+{
+  /* Do nothing by default */
 }
 
 void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
@@ -824,7 +849,7 @@ void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
 
   if (sinkImpl->getMediaPipeline ()->getId () != getMediaPipeline ()->getId() ) {
     throw KurentoException (CONNECT_ERROR,
-                            "Media elements does not share pipeline");
+                            "Media elements do not share pipeline");
   }
 
   std::unique_lock<std::recursive_timed_mutex> lock (sinksMutex);
@@ -848,6 +873,9 @@ void MediaElementImpl::connect (std::shared_ptr<MediaElement> sink,
                                          sourceMediaDescription,
                                          connection->getSinkDescription () );
   }
+
+  sinkImpl->prepareSinkConnection (connectionData->getSource(), mediaType,
+                                   sourceMediaDescription, sinkMediaDescription);
 
   type = convertMediaType (mediaType);
   g_signal_emit_by_name (getGstreamerElement (), "request-new-pad", type,
@@ -924,24 +952,24 @@ void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink)
 {
   // Until mediaDescriptions are really used, we just disconnect audio an video
   disconnect (sink, std::shared_ptr<MediaType> (new MediaType (
-                MediaType::AUDIO) ), "", "");
+                MediaType::AUDIO) ), DEFAULT, DEFAULT);
   disconnect (sink, std::shared_ptr<MediaType> (new MediaType (
-                MediaType::VIDEO) ), "", "");
+                MediaType::VIDEO) ), DEFAULT, DEFAULT);
   disconnect (sink, std::shared_ptr<MediaType> (new MediaType (
-                MediaType::DATA) ), "", "");
+                MediaType::DATA) ), DEFAULT, DEFAULT);
 }
 
 void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
                                    std::shared_ptr<MediaType> mediaType)
 {
-  disconnect (sink, mediaType, "", "");
+  disconnect (sink, mediaType, DEFAULT, DEFAULT);
 }
 
 void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
                                    std::shared_ptr<MediaType> mediaType,
                                    const std::string &sourceMediaDescription)
 {
-  disconnect (sink, mediaType, sourceMediaDescription, "");
+  disconnect (sink, mediaType, sourceMediaDescription, DEFAULT);
 }
 
 void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
@@ -967,9 +995,20 @@ void MediaElementImpl::disconnect (std::shared_ptr<MediaElement> sink,
     std::shared_ptr<ElementConnectionDataInternal> connectionData;
     gboolean ret;
 
-    connectionData = sinkImpl->sources.at (mediaType).at (sourceMediaDescription);
-    sinkImpl->sources.at (mediaType).erase (sourceMediaDescription);
-    sinks.at (mediaType).at (sinkMediaDescription).erase (connectionData);
+    connectionData = sinkImpl->sources.at (mediaType).at (sinkMediaDescription);
+
+    if (connectionData->toInterface()->getSourceDescription() ==
+        sourceMediaDescription) {
+      sinkImpl->sources.at (mediaType).erase (sinkMediaDescription);
+    }
+
+    for (auto conn : sinks.at (mediaType).at (sourceMediaDescription) ) {
+      if (conn->toInterface()->getSink() == sink &&
+          conn->toInterface()->getSinkDescription() == sinkMediaDescription) {
+        sinks.at (mediaType).at (sourceMediaDescription).erase (conn);
+        break;
+      }
+    }
 
     g_signal_emit_by_name (getGstreamerElement (), "release-requested-pad",
                            connectionData->getSourcePadName (), &ret, NULL);
@@ -1083,6 +1122,17 @@ int MediaElementImpl::getMinOuputBitrate ()
 {
   gint bitrate;
 
+  GST_WARNING ("minOuputBitrate property is deprecated, use property "
+               "minOutputBitrate");
+  g_object_get (G_OBJECT (element), MIN_OUTPUT_BITRATE, &bitrate, NULL);
+
+  return bitrate;
+}
+
+int MediaElementImpl::getMinOutputBitrate ()
+{
+  gint bitrate;
+
   g_object_get (G_OBJECT (element), MIN_OUTPUT_BITRATE, &bitrate, NULL);
 
   return bitrate;
@@ -1090,11 +1140,30 @@ int MediaElementImpl::getMinOuputBitrate ()
 
 void MediaElementImpl::setMinOuputBitrate (int minOuputBitrate)
 {
+  GST_WARNING ("minOuputBitrate property is deprecated, use property "
+               "minOutputBitrate");
   g_object_set (G_OBJECT (element), MIN_OUTPUT_BITRATE, minOuputBitrate,
                 NULL);
 }
 
+void MediaElementImpl::setMinOutputBitrate (int minOutputBitrate)
+{
+  g_object_set (G_OBJECT (element), MIN_OUTPUT_BITRATE, minOutputBitrate,
+                NULL);
+}
+
 int MediaElementImpl::getMaxOuputBitrate ()
+{
+  gint bitrate;
+
+  GST_WARNING ("maxOuputBitrate property is deprecated, use property "
+               "maxOutputBitrate");
+  g_object_get (G_OBJECT (element), MAX_OUTPUT_BITRATE, &bitrate, NULL);
+
+  return bitrate;
+}
+
+int MediaElementImpl::getMaxOutputBitrate ()
 {
   gint bitrate;
 
@@ -1105,7 +1174,15 @@ int MediaElementImpl::getMaxOuputBitrate ()
 
 void MediaElementImpl::setMaxOuputBitrate (int maxOuputBitrate)
 {
+  GST_WARNING ("maxOuputBitrate property is deprecated, use property "
+               "maxOutputBitrate");
   g_object_set (G_OBJECT (element), MAX_OUTPUT_BITRATE, maxOuputBitrate,
+                NULL);
+}
+
+void MediaElementImpl::setMaxOutputBitrate (int maxOutputBitrate)
+{
+  g_object_set (G_OBJECT (element), MAX_OUTPUT_BITRATE, maxOutputBitrate,
                 NULL);
 }
 
@@ -1282,8 +1359,12 @@ bool MediaElementImpl::isMediaFlowingIn (std::shared_ptr<MediaType> mediaType,
 
   if (mediaType->getValue () == MediaType::VIDEO) {
     key = std::string (TYPE_VIDEO) + std::string (sinkMediaDescription);
-  } else {
+  } else if (mediaType->getValue () == MediaType::AUDIO) {
     key = std::string (TYPE_AUDIO) + std::string (sinkMediaDescription);
+  } else {
+    GST_ERROR ("Media type DATA is not supported for MediaFlowingIn");
+    throw KurentoException (MEDIA_OBJECT_ILLEGAL_PARAM_ERROR,
+                            "Media type DATA is not supported for MediaFlowingIn");
   }
 
   it = mediaFlowDataIn.find (key);
@@ -1311,8 +1392,12 @@ bool MediaElementImpl::isMediaFlowingOut (std::shared_ptr<MediaType> mediaType,
 
   if (mediaType->getValue () == MediaType::VIDEO) {
     key = std::string (TYPE_VIDEO) + std::string (sourceMediaDescription);
-  } else {
+  } else if (mediaType->getValue () == MediaType::AUDIO) {
     key = std::string (TYPE_AUDIO) + std::string (sourceMediaDescription);
+  } else {
+    GST_ERROR ("Media type DATA is not supported for MediaFlowingOut");
+    throw KurentoException (MEDIA_OBJECT_ILLEGAL_PARAM_ERROR,
+                            "Media type DATA is not supported for MediaFlowingOut");
   }
 
   it = mediaFlowDataOut.find (key);

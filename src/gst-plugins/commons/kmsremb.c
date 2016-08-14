@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -25,10 +27,10 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define REMB_MAX 2000000        /* bps */
 
 #define KMS_REMB_REMOTE "kms-remb-remote"
-
-/* KmsRembLocal begin */
+G_DEFINE_QUARK (KMS_REMB_REMOTE, kms_remb_remote);
 
 #define KMS_REMB_LOCAL "kms-remb-local"
+G_DEFINE_QUARK (KMS_REMB_LOCAL, kms_remb_local);
 
 #define DEFAULT_REMB_PACKETS_RECV_INTERVAL_TOP 100
 #define DEFAULT_REMB_EXPONENTIAL_FACTOR 0.04
@@ -38,13 +40,15 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 #define DEFAULT_REMB_THRESHOLD_FACTOR 0.8
 #define DEFAULT_REMB_UP_LOSSES 12       /* 4% losses */
 
+#define REMB_MAX_FACTOR_INPUT_BR 2
+
 static void
 kms_remb_base_destroy (KmsRembBase * rb)
 {
   g_signal_handler_disconnect (rb->rtpsess, rb->signal_id);
   rb->signal_id = 0;
-  g_object_set_data (rb->rtpsess, KMS_REMB_LOCAL, NULL);
-  g_object_set_data (rb->rtpsess, KMS_REMB_REMOTE, NULL);
+  g_object_set_qdata (rb->rtpsess, kms_remb_local_quark (), NULL);
+  g_object_set_qdata (rb->rtpsess, kms_remb_remote_quark (), NULL);
   g_clear_object (&rb->rtpsess);
   g_rec_mutex_clear (&rb->mutex);
   g_hash_table_unref (rb->remb_stats);
@@ -78,6 +82,8 @@ kms_remb_base_update_stats (KmsRembBase * rb, guint ssrc, guint bitrate)
 
   KMS_REMB_BASE_UNLOCK (rb);
 }
+
+/* KmsRembLocal begin */
 
 typedef struct _KmsRlRemoteSession
 {
@@ -282,7 +288,7 @@ kms_remb_local_update (KmsRembLocal * rl)
   if (rl->fraction_lost_record == 0) {
     gint remb_base, remb_new;
 
-    remb_base = MIN (rl->remb, rl->max_br);
+    remb_base = MAX (rl->remb, rl->max_br);
 
     if (remb_base < rl->threshold) {
       GST_TRACE_OBJECT (KMS_REMB_BASE (rl)->rtpsess, "A.1) Exponential (%f)",
@@ -316,6 +322,8 @@ kms_remb_local_update (KmsRembLocal * rl)
       rl->avg_br = 0;
     }
   }
+
+  rl->remb = MIN (rl->remb, rl->max_br * REMB_MAX_FACTOR_INPUT_BR);
 
   if (rl->max_bw > 0) {
     rl->remb = MIN (rl->remb, rl->max_bw * 1000);
@@ -363,7 +371,7 @@ on_sending_rtcp (GObject * sess, GstBuffer * buffer, gboolean is_early,
   guint packet_ssrc;
   AddSsrcsData data;
 
-  rl = g_object_get_data (sess, KMS_REMB_LOCAL);
+  rl = g_object_get_qdata (sess, kms_remb_local_quark ());
 
   if (!rl) {
     GST_WARNING ("Invalid RembLocal");
@@ -449,7 +457,7 @@ kms_remb_local_create (GObject * rtpsess, guint min_bw, guint max_bw)
 {
   KmsRembLocal *rl = g_slice_new0 (KmsRembLocal);
 
-  g_object_set_data (rtpsess, KMS_REMB_LOCAL, rl);
+  g_object_set_qdata (rtpsess, kms_remb_local_quark (), rl);
   rl->base.signal_id = g_signal_connect (rtpsess, "on-sending-rtcp",
       G_CALLBACK (on_sending_rtcp), NULL);
 
@@ -618,7 +626,7 @@ kms_remb_remote_update (KmsRembRemote * rm,
         "REMB packet without any SSRC");
     return;
   } else if (remb_packet->n_ssrcs > 1) {
-    GST_WARNING_OBJECT (KMS_REMB_BASE (rm)->rtpsess,
+    GST_FIXME_OBJECT (KMS_REMB_BASE (rm)->rtpsess,
         "REMB packet with %" G_GUINT32_FORMAT " SSRCs."
         " A inconsistent management could take place", remb_packet->n_ssrcs);
   }
@@ -666,7 +674,7 @@ process_psfb_afb (GObject * sess, guint ssrc, GstBuffer * fci_buffer)
     return;
   }
 
-  rm = g_object_get_data (sess, KMS_REMB_REMOTE);
+  rm = g_object_get_qdata (sess, kms_remb_remote_quark ());
 
   if (!rm) {
     GST_WARNING ("Invalid RembRemote");
@@ -741,7 +749,7 @@ kms_remb_remote_create (GObject * rtpsess, guint local_ssrc,
 {
   KmsRembRemote *rm = g_slice_new0 (KmsRembRemote);
 
-  g_object_set_data (rtpsess, KMS_REMB_REMOTE, rm);
+  g_object_set_qdata (rtpsess, kms_remb_remote_quark (), rm);
   rm->base.signal_id = g_signal_connect (rtpsess, "on-feedback-rtcp",
       G_CALLBACK (on_feedback_rtcp), NULL);
 

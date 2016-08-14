@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifndef __KMS_ELEMENT_H__
@@ -17,6 +19,7 @@
 
 #include <gst/gst.h>
 #include "kmselementpadtype.h"
+#include "kmsmediatype.h"
 
 G_BEGIN_DECLS
 
@@ -107,6 +110,10 @@ GstElement * kms_element_get_video_output_element (KmsElement * self,
   const gchar *description);
 GstElement * kms_element_get_data_output_element (KmsElement * self,
   const gchar *description);
+GstElement * kms_element_get_output_element (KmsElement * self,
+    KmsElementPadType pad_type, const gchar * description);
+GstElement * kms_element_get_output_element_from_media_type (KmsElement * self,
+    KmsMediaType media_type, const gchar * description);
 
 #define kms_element_connect_sink_target(self, target, type)   \
   kms_element_connect_sink_target_full (self, target, type, NULL, NULL, NULL)
@@ -115,6 +122,8 @@ typedef void (*KmsAddPadFunc) (GstPad *pad, gpointer data);
 
 GstPad *kms_element_connect_sink_target_full (KmsElement *self, GstPad * target,
     KmsElementPadType type, const gchar *description, KmsAddPadFunc func, gpointer user_data);
+GstPad *kms_element_connect_sink_target_full_by_media_type (KmsElement *self, GstPad * target,
+    KmsMediaType media_type, const gchar *description, KmsAddPadFunc func, gpointer user_data);
 void kms_element_remove_sink (KmsElement *self, GstPad * pad);
 
 #define kms_element_remove_sink_by_type(self, type) \

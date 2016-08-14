@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -110,22 +112,26 @@ public:
     code (code) {};
   virtual ~KurentoException() {};
 
-  virtual const char *what() const noexcept {
+  virtual const char *what() const noexcept
+  {
     return message.c_str();
   };
 
-  const std::string &getMessage() const {
+  const std::string &getMessage() const
+  {
     return message;
   };
 
-  int getCode() const {
+  int getCode() const
+  {
     return code;
   }
 
-  std::string getType() {
+  std::string getType()
+  {
     switch (code) {
-      /* Error codes */
-      /* GENERIC MEDIA ERRORS */
+    /* Error codes */
+    /* GENERIC MEDIA ERRORS */
 
 //    case MEDIA_ERROR:
 //      return "MEDIA_ERROR";
@@ -155,7 +161,7 @@ public:
     case NOT_ENOUGH_RESOURCES:
       return "NOT_ENOUGH_RESOURCES";
 
-      /* MediaObject ERRORS */
+    /* MediaObject ERRORS */
     case MEDIA_OBJECT_TYPE_NOT_FOUND:
       return "MEDIA_OBJECT_TYPE_NOT_FOUND";
 
@@ -190,7 +196,7 @@ public:
     case MEDIA_OBJECT_OPERATION_NOT_SUPPORTED:
       return "MEDIA_OBJECT_OPERATION_NOT_SUPPORTED";
 
-      /* SDP ERRORS */
+    /* SDP ERRORS */
     case SDP_CREATE_ERROR:
       return "SDP_CREATE_ERROR";
 
@@ -227,22 +233,22 @@ public:
     case SDP_END_POINT_CANNOT_CREATE_SESSON:
       return "SDP_END_POINT_CANNOT_CREATE_SESSON";
 
-      /* HTTP ERRORS */
+    /* HTTP ERRORS */
     case HTTP_END_POINT_REGISTRATION_ERROR:
       return "HTTP_END_POINT_REGISTRATION_ERROR";
 
-      /* ICE ERRORS */
+    /* ICE ERRORS */
     case ICE_GATHER_CANDIDATES_ERROR:
       return "ICE_GATHER_CANDIDATES_ERROR";
 
     case ICE_ADD_CANDIDATE_ERROR:
       return "ICE_ADD_CANDIDATE_ERROR";
 
-      /* URI ERRORS */
+    /* URI ERRORS */
     case URI_PATH_FILE_NOT_FOUND:
       return "URI_PATH_FILE_NOT_FOUND";
 
-      /*PLAYER ERRORS*/
+    /*PLAYER ERRORS*/
     case PLAYER_SEEK_FAIL:
       return "PLAYER_SEEK_FAIL";
 

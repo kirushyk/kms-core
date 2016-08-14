@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifndef __KMS_AGNOSTIC_CAPS_H__
@@ -22,8 +24,9 @@
 #define KMS_AGNOSTIC_RAW_CAPS \
   KMS_AGNOSTIC_RAW_AUDIO_CAPS \
   KMS_AGNOSTIC_RAW_VIDEO_CAPS
-#define KMS_AGNOSTIC_AUDIO_CAPS \
-  KMS_AGNOSTIC_RAW_AUDIO_CAPS \
+#define KMS_AGNOSTIC_RTP_CAPS \
+  "application/x-rtp;"
+#define KMS_AGNOSTIC_ALL_AUDIO_FORMAT_CAPS \
   "audio/x-sbc;" \
   "audio/x-mulaw;" \
   "audio/x-flac;" \
@@ -53,8 +56,13 @@
   "audio/x-opus;" \
   "audio/AMR,rate=[8000, 16000],channels=1;" \
   "audio/x-gsm;"
-#define KMS_AGNOSTIC_VIDEO_CAPS \
-  KMS_AGNOSTIC_RAW_VIDEO_CAPS \
+#define KMS_AGNOSTIC_NO_RTP_AUDIO_CAPS \
+  KMS_AGNOSTIC_RAW_AUDIO_CAPS \
+  KMS_AGNOSTIC_ALL_AUDIO_FORMAT_CAPS
+#define KMS_AGNOSTIC_AUDIO_CAPS \
+  KMS_AGNOSTIC_NO_RTP_AUDIO_CAPS \
+  KMS_AGNOSTIC_RTP_CAPS
+#define KMS_AGNOSTIC_ALL_VIDEO_FORMAT_CAPS \
   "video/x-dirac;" \
   "image/png;" \
   "image/jpeg;" \
@@ -103,10 +111,16 @@
   "video/mpeg,mpegversion=[1, 2];" \
   "video/x-theora;" \
   "video/x-vp8;" \
-  "application/x-yuv4mpeg,y4mversion=2;" \
-
+  "application/x-yuv4mpeg,y4mversion=2;"
+#define KMS_AGNOSTIC_NO_RTP_VIDEO_CAPS \
+  KMS_AGNOSTIC_RAW_VIDEO_CAPS \
+  KMS_AGNOSTIC_ALL_VIDEO_FORMAT_CAPS
+#define KMS_AGNOSTIC_VIDEO_CAPS \
+  KMS_AGNOSTIC_NO_RTP_VIDEO_CAPS \
+  KMS_AGNOSTIC_RTP_CAPS
 #define KMS_AGNOSTIC_DATA_CAPS "application/data;"
 
 #define KMS_AGNOSTIC_CAPS_CAPS KMS_AGNOSTIC_AUDIO_CAPS KMS_AGNOSTIC_VIDEO_CAPS
+#define KMS_AGNOSTIC_NO_RTP_CAPS_CAPS KMS_AGNOSTIC_NO_RTP_AUDIO_CAPS KMS_AGNOSTIC_NO_RTP_VIDEO_CAPS
 
 #endif /* __KMS_AGNOSTIC_CAPS_H__ */

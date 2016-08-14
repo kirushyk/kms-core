@@ -1,4 +1,5 @@
 include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -24,6 +25,13 @@ set(KMS_SDP_AGENT_SOURCES
   kmssdpgroupmanager.c
   kmssdprejectmediahandler.c
   kmssdpconnectionext.c
+  kmssdpulpfecext.c
+  kmssdpredundantext.c
+  kmssdpmediadirext.c
+)
+
+set(KMS_SDP_AGENT_ENUM_HEADERS
+  kmssdpagentstate.h
 )
 
 set(KMS_SDP_AGENT_HEADERS
@@ -48,6 +56,18 @@ set(KMS_SDP_AGENT_HEADERS
   kmssdpgroupmanager.h
   kmssdprejectmediahandler.h
   kmssdpconnectionext.h
+  kmssdpulpfecext.h
+  kmssdpredundantext.h
+  kmssdpmediadirext.h
+  ${KMS_SDP_AGENT_ENUM_HEADERS}
+)
+
+add_glib_enumtypes (
+  KMS_SDP_AGENT_SOURCES
+  KMS_SDP_AGENT_HEADERS
+  kms-sdp-agent-enumtypes
+  KMS
+  ${KMS_SDP_AGENT_ENUM_HEADERS}
 )
 
 add_glib_marshal(KMS_SDP_AGENT_SOURCES KMS_SDP_AGENT_HEADERS kms-sdp-agent-marshal __kms_sdp_agent_marshal)
@@ -83,4 +103,3 @@ install(
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   PUBLIC_HEADER DESTINATION ${SDP_AGENT_INCLUDE_PREFIX}
 )
-

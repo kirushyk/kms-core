@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -25,6 +27,7 @@
 #define PLUGIN_NAME "agnosticbin3"
 
 #define KMS_AGNOSTICBIN3_SRC_PAD_DATA "kms-agnosticbin3-src-pad-data"
+G_DEFINE_QUARK (KMS_AGNOSTICBIN3_SRC_PAD_DATA, kms_agnosticbin3_src_pad_data);
 
 #define GST_CAT_DEFAULT kms_agnostic_bin3_debug
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
@@ -191,7 +194,9 @@ connect_srcpad_to_encoder (GstPad * srcpad, GstPad * sinkpad)
   GstPad *target;
   gboolean transcode;
 
-  data = g_object_get_data (G_OBJECT (srcpad), KMS_AGNOSTICBIN3_SRC_PAD_DATA);
+  data =
+      g_object_get_qdata (G_OBJECT (srcpad),
+      kms_agnosticbin3_src_pad_data_quark ());
   if (data == NULL) {
     GST_ERROR_OBJECT (srcpad, "No configuration data");
     return;
@@ -701,8 +706,9 @@ kms_agnostic_bin3_create_src_pad_with_caps (KmsAgnosticBin3 * self,
   }
 
 end:
-  g_object_set_data_full (G_OBJECT (pad), KMS_AGNOSTICBIN3_SRC_PAD_DATA,
-      paddata, (GDestroyNotify) destroy_src_pad_data);
+  g_object_set_qdata_full (G_OBJECT (pad),
+      kms_agnosticbin3_src_pad_data_quark (), paddata,
+      (GDestroyNotify) destroy_src_pad_data);
 
   kms_agnostic_bin3_append_pending_src_pad (self, pad);
 
@@ -718,8 +724,9 @@ kms_agnostic_bin3_create_src_pad_without_caps (KmsAgnosticBin3 * self,
 
   paddata = create_src_pad_data ();
   pad = kms_agnostic_bin3_create_new_src_pad (self, templ);
-  g_object_set_data_full (G_OBJECT (pad), KMS_AGNOSTICBIN3_SRC_PAD_DATA,
-      paddata, (GDestroyNotify) destroy_src_pad_data);
+  g_object_set_qdata_full (G_OBJECT (pad),
+      kms_agnosticbin3_src_pad_data_quark (), paddata,
+      (GDestroyNotify) destroy_src_pad_data);
 
   kms_agnostic_bin3_append_pending_src_pad (self, pad);
 
@@ -737,7 +744,9 @@ kms_agnostic_bin3_src_pad_linked (GstPad * pad, GstPad * peer,
   GstCaps *caps = NULL;
   gboolean ret;
 
-  data = g_object_get_data (G_OBJECT (pad), KMS_AGNOSTICBIN3_SRC_PAD_DATA);
+  data =
+      g_object_get_qdata (G_OBJECT (pad),
+      kms_agnosticbin3_src_pad_data_quark ());
   if (data == NULL) {
     GST_ERROR_OBJECT (pad, "No configuration data");
     return;

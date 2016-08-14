@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -197,7 +199,7 @@ sdp_utils_media_get_fid_ssrc (const GstSDPMedia * media, guint pos)
 GstSDPDirection
 sdp_utils_media_config_get_direction (const GstSDPMedia * media)
 {
-  GstSDPDirection dir = SENDRECV;
+  GstSDPDirection dir = GST_SDP_DIRECTION_SENDRECV;
 
   guint i, len;
 
@@ -214,6 +216,47 @@ sdp_utils_media_config_get_direction (const GstSDPMedia * media)
   }
 
   return dir;
+}
+
+gboolean
+sdp_utils_media_config_set_direction (GstSDPMedia * media,
+    GstSDPDirection direction)
+{
+  const gchar *dir_str;
+  guint i, len;
+
+  if (direction == GST_SDP_DIRECTION_RECVONLY) {
+    dir_str = RECVONLY_STR;
+  } else if (direction == GST_SDP_DIRECTION_SENDONLY) {
+    dir_str = SENDONLY_STR;
+  } else if (direction == GST_SDP_DIRECTION_SENDRECV) {
+    dir_str = SENDRECV_STR;
+  } else if (direction == GST_SDP_DIRECTION_INACTIVE) {
+    dir_str = INACTIVE_STR;
+  } else {
+    GST_WARNING ("Invalid attribute direction: %d", direction);
+    return FALSE;
+  }
+
+  len = gst_sdp_media_attributes_len (media);
+  for (i = 0; i < len; i++) {
+    const GstSDPAttribute *a;
+
+    a = gst_sdp_media_get_attribute (media, i);
+    if (sdp_utils_attribute_is_direction (a, NULL)) {
+      if (gst_sdp_media_remove_attribute (media, i) != GST_SDP_OK) {
+        gchar *str = NULL;
+
+        GST_WARNING ("Cannot remove attribute '%d' from media:\n%s", i, (str =
+                gst_sdp_media_as_text (media)));
+        g_free (str);
+
+        return FALSE;
+      }
+    }
+  }
+
+  return gst_sdp_media_add_attribute (media, dir_str, "") == GST_SDP_OK;
 }
 
 /**
@@ -834,6 +877,120 @@ end:
 
   g_strfreev (tokens);
   return ret;
+}
+
+gboolean
+sdp_utils_is_pt_in_fmts (const GstSDPMedia * media, gint pt)
+{
+  guint i, len;
+
+  len = gst_sdp_media_formats_len (media);
+
+  for (i = 0; i < len; i++) {
+    gint payload;
+
+    payload = atoi (gst_sdp_media_get_format (media, i));
+
+    if (payload == pt) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+gboolean
+sdp_utils_get_data_from_rtpmap_codec (const GstSDPMedia * media,
+    const gchar * codec, gint * pt, gint * clock_rate)
+{
+  gboolean found = FALSE;
+  guint8 i;
+
+  for (i = 0;; i++) {
+    const gchar *val = NULL;
+    gchar **attrs;
+
+    val = gst_sdp_media_get_attribute_val_n (media, "rtpmap", i);
+
+    if (val == NULL) {
+      break;
+    }
+
+    if (!g_str_match_string (codec, val, TRUE)) {
+      continue;
+    }
+
+    attrs = g_strsplit (val, " ", 0);
+
+    if (attrs[0] == NULL) {
+      /* No pt */
+      g_strfreev (attrs);
+      continue;
+    }
+
+    if (attrs[1] == NULL) {
+      /* No codec */
+      g_strfreev (attrs);
+      continue;
+    }
+
+    if (!sdp_utils_is_pt_in_fmts (media, atoi (attrs[0]))) {
+      /* pt is not in the offer */
+      g_strfreev (attrs);
+      continue;
+    }
+
+    if (!sdp_utils_get_data_from_rtpmap (attrs[1], NULL, clock_rate)) {
+      g_strfreev (attrs);
+      continue;
+    }
+
+    if (pt != NULL) {
+      *pt = atoi (attrs[0]);
+    }
+
+    found = TRUE;
+
+    g_strfreev (attrs);
+
+    break;
+  }
+
+  return found;
+}
+
+gint
+sdp_utils_get_pt_for_codec_name (const GstSDPMedia * media,
+    const gchar * codec_name)
+{
+  const gchar *rtpmap;
+  guint j, f_len;
+  gint pt = -1;
+
+  f_len = gst_sdp_media_formats_len (media);
+  for (j = 0; j < f_len; j++) {
+    gchar *found_codec_name;
+    const gchar *payload = gst_sdp_media_get_format (media, j);
+
+    rtpmap = sdp_utils_sdp_media_get_rtpmap (media, payload);
+
+    if (!sdp_utils_get_data_from_rtpmap (rtpmap, &found_codec_name, NULL)) {
+      continue;
+    }
+
+    if (g_strcmp0 (found_codec_name, codec_name) == 0) {
+      GST_ERROR ("Found codec name pt is: %u", atoi (payload));
+      pt = atoi (payload);
+    }
+
+    g_free (found_codec_name);
+
+    if (pt != -1) {
+      return pt;
+    }
+  }
+
+  return pt;
 }
 
 static void init_debug (void) __attribute__ ((constructor));

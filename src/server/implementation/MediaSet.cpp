@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -164,8 +166,7 @@ MediaSet::~MediaSet ()
   std::unique_lock <std::recursive_mutex> lock (recMutex);
 
   if (!objectsMap.empty() ) {
-    std::cerr << "Warning: Still " + std::to_string (objectsMap.size() ) +
-              " object/s alive" << std::endl;
+    GST_DEBUG ("Still %lu object/s alive", objectsMap.size() );
   }
 
   terminated = true;
@@ -222,26 +223,18 @@ MediaSet::setServerManager (std::shared_ptr <ServerManagerImpl> serverManager)
 std::shared_ptr<MediaObjectImpl>
 MediaSet::ref (MediaObjectImpl *mediaObjectPtr)
 {
-  bool created = false;
   std::unique_lock <std::recursive_mutex> lock (recMutex);
-
   std::shared_ptr<MediaObjectImpl> mediaObject;
 
   if (mediaObjectPtr == NULL) {
     throw KurentoException (MEDIA_OBJECT_NOT_FOUND, "Invalid object");
   }
 
-  try {
-    mediaObject = std::dynamic_pointer_cast<MediaObjectImpl>
-                  (mediaObjectPtr->shared_from_this() );
-  } catch (std::bad_weak_ptr e) {
-    created = true;
-    mediaObject =  std::shared_ptr<MediaObjectImpl> (mediaObjectPtr, [this] (
-    MediaObjectImpl * obj) {
-      // this will always exist because destructor is waiting for its threads
-      this->releasePointer (obj);
-    });
-  }
+  mediaObject =  std::shared_ptr<MediaObjectImpl> (mediaObjectPtr, [this] (
+  MediaObjectImpl * obj) {
+    // this will always exist because destructor is waiting for its threads
+    this->releasePointer (obj);
+  });
 
   objectsMap[mediaObject->getId()] = std::weak_ptr<MediaObjectImpl> (mediaObject);
 
@@ -249,11 +242,20 @@ MediaSet::ref (MediaObjectImpl *mediaObjectPtr)
     std::shared_ptr<MediaObjectImpl> parent = std::dynamic_pointer_cast
         <MediaObjectImpl> (mediaObject->getParent() );
 
-    ref (parent.get() );
     childrenMap[parent->getId()][mediaObject->getId()] = mediaObject;
   }
 
-  if (this->serverManager && created) {
+  auto parent = mediaObject->getParent();
+
+  if (parent) {
+    for (auto session : reverseSessionMap[parent->getId()]) {
+      ref (session, mediaObject);
+    }
+  }
+
+  mediaObject->postConstructor ();
+
+  if (this->serverManager) {
     lock.unlock ();
     serverManager->signalObjectCreated (ObjectCreated (this->serverManager,
                                         std::dynamic_pointer_cast<MediaObject> (mediaObject) ) );
@@ -282,7 +284,6 @@ MediaSet::ref (const std::string &sessionId,
 
   sessionMap[sessionId][mediaObject->getId()] = mediaObject;
   reverseSessionMap[mediaObject->getId()].insert (sessionId);
-  ref (mediaObject.get() );
 }
 
 void
@@ -370,6 +371,16 @@ call_release (std::shared_ptr<MediaObjectImpl> mediaObject)
   }
 }
 
+bool
+MediaSet::isServerManager (std::shared_ptr< MediaObjectImpl > mediaObject)
+{
+  if (mediaObject && serverManager) {
+    return mediaObject.get() == serverManager.get();
+  } else {
+    return false;
+  }
+}
+
 void
 MediaSet::unref (const std::string &sessionId,
                  std::shared_ptr< MediaObjectImpl > mediaObject)
@@ -386,11 +397,9 @@ MediaSet::unref (const std::string &sessionId,
   if (it != sessionMap.end() ) {
     auto it2 = it->second.find (mediaObject->getId() );
 
-    if (it2 == it->second.end() ) {
-      return;
+    if (it2 != it->second.end() ) {
+      it->second.erase (it2);
     }
-
-    it->second.erase (it2);
   }
 
   auto childrenIt = childrenMap.find (mediaObject->getId() );
@@ -409,20 +418,21 @@ MediaSet::unref (const std::string &sessionId,
     it3->second.erase (sessionId);
 
     if (it3->second.empty() ) {
-      std::shared_ptr<MediaObjectImpl> parent;
-
-      released = mediaObject.get() != serverManager.get();
-
-      if (released) {
-        parent = std::dynamic_pointer_cast<MediaObjectImpl> (mediaObject->getParent() );
-
-        if (parent) {
-          childrenMap[parent->getId()].erase (mediaObject->getId() );
-        }
-
-        childrenMap.erase (mediaObject->getId() );
-      }
+      released = true;
     }
+  } else {
+    released = true;
+  }
+
+  if (released && !isServerManager (mediaObject) ) {
+    std::shared_ptr<MediaObjectImpl> parent;
+    parent = std::dynamic_pointer_cast<MediaObjectImpl> (mediaObject->getParent() );
+
+    if (parent) {
+      childrenMap[parent->getId()].erase (mediaObject->getId() );
+    }
+
+    childrenMap.erase (mediaObject->getId() );
   }
 
   auto eventIt = eventHandler.find (sessionId);
@@ -659,7 +669,7 @@ std::list<std::shared_ptr<MediaObjectImpl>>
 }
 
 std::list<std::shared_ptr<MediaObjectImpl>>
-    MediaSet::getChilds (std::shared_ptr<MediaObjectImpl> obj)
+    MediaSet::getChildren (std::shared_ptr<MediaObjectImpl> obj)
 {
   std::unique_lock <std::recursive_mutex> lock (recMutex);
   std::list<std::shared_ptr<MediaObjectImpl>> ret;
@@ -669,7 +679,7 @@ std::list<std::shared_ptr<MediaObjectImpl>>
       ret.push_back (it.second);
     }
   } catch (std::out_of_range) {
-    GST_ERROR ("Cannot get childrens of object %s", obj->getId().c_str() );
+    GST_DEBUG ("Object %s has not children", obj->getId().c_str() );
   }
 
   return ret;

@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -23,7 +25,7 @@
 #include "sdp_utils.h"
 #include "kmssdprtpavpmediahandler.h"
 
-#define OBJECT_NAME "rtpavpmediahandler"
+#define OBJECT_NAME "sdprtpavpmediahandler"
 
 GST_DEBUG_CATEGORY_STATIC (kms_sdp_rtp_avp_media_handler_debug_category);
 #define GST_CAT_DEFAULT kms_sdp_rtp_avp_media_handler_debug_category
@@ -206,7 +208,7 @@ kms_sdp_rtp_map_create_for_codec (KmsSdpRtpAvpMediaHandler * self,
   }
 
   payload = kms_i_sdp_payload_manager_get_dynamic_pt (self->priv->ptmanager,
-      error);
+      name, error);
 
   if (payload >= 0) {
     rtpmap = kms_sdp_rtp_map_new (payload, name);
@@ -426,9 +428,9 @@ kms_sdp_rtp_avp_media_handler_add_rtpmap_attrs (KmsSdpRtpAvpMediaHandler * self,
 
 static GstSDPMedia *
 kms_sdp_rtp_avp_media_handler_create_offer (KmsSdpMediaHandler * handler,
-    const gchar * media, GError ** error)
+    const gchar * media, const GstSDPMedia * prev_offer, GError ** error)
 {
-  GstSDPMedia *m = NULL;
+  GstSDPMedia *m;
 
   if (gst_sdp_media_new (&m) != GST_SDP_OK) {
     g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
@@ -438,13 +440,13 @@ kms_sdp_rtp_avp_media_handler_create_offer (KmsSdpMediaHandler * handler,
 
   /* Create m-line */
   if (!KMS_SDP_MEDIA_HANDLER_GET_CLASS (handler)->init_offer (handler, media, m,
-          error)) {
+          prev_offer, error)) {
     goto error;
   }
 
   /* Add attributes to m-line */
   if (!KMS_SDP_MEDIA_HANDLER_GET_CLASS (handler)->add_offer_attributes (handler,
-          m, error)) {
+          m, prev_offer, error)) {
     goto error;
   }
 
@@ -460,7 +462,7 @@ error:
 
 static gboolean
 kms_sdp_rtp_avp_media_handler_encoding_supported (KmsSdpRtpAvpMediaHandler *
-    self, const GstSDPMedia * media, const gchar * enc)
+    self, const GstSDPMedia * media, const gchar * enc, gint pt)
 {
   GSList *item = NULL;
 
@@ -483,6 +485,10 @@ kms_sdp_rtp_avp_media_handler_encoding_supported (KmsSdpRtpAvpMediaHandler *
     } else {
       /* Check dynamic pt */
       supported = g_ascii_strcasecmp (rtpmap->name, enc) == 0;
+      if (supported) {
+        kms_i_sdp_payload_manager_register_dynamic_payload (self->
+            priv->ptmanager, pt, rtpmap->name, NULL);
+      }
     }
 
     if (supported) {
@@ -502,19 +508,18 @@ kms_sdp_rtp_avp_media_handler_format_supported (KmsSdpRtpAvpMediaHandler * self,
   const gchar *val;
   gchar **attrs;
   gboolean ret;
+  gint pt;
 
   val = sdp_utils_get_attr_map_value (media, "rtpmap", fmt);
+  pt = atoi (fmt);
 
   if (val == NULL) {
-    gint pt;
-
     /* Check if this is a static payload type so they do not need to be */
     /* set in an rtpmap attribute */
 
-    pt = atoi (fmt);
     if (pt >= 0 && pt <= G_N_ELEMENTS (rtpmaps) && rtpmaps[pt] != NULL) {
       return kms_sdp_rtp_avp_media_handler_encoding_supported (self, media,
-          rtpmaps[pt]);
+          rtpmaps[pt], pt);
     } else {
       return FALSE;
     }
@@ -523,7 +528,7 @@ kms_sdp_rtp_avp_media_handler_format_supported (KmsSdpRtpAvpMediaHandler * self,
   attrs = g_strsplit (val, " ", 0);
   ret =
       kms_sdp_rtp_avp_media_handler_encoding_supported (self, media,
-      attrs[1] /* encoding */ );
+      attrs[1] /* encoding */ , pt);
   g_strfreev (attrs);
 
   return ret;
@@ -601,7 +606,7 @@ static gboolean
       pt = atoi (fmt);
       if (pt >= 0 && pt <= G_N_ELEMENTS (rtpmaps) && rtpmaps[pt] != NULL) {
         if (kms_sdp_rtp_avp_media_handler_encoding_supported (self, offer,
-                rtpmaps[pt])) {
+                rtpmaps[pt], pt)) {
           /* Static payload do not nee to be set as rtpmap attribute */
           continue;
         } else {
@@ -733,14 +738,20 @@ kms_sdp_rtp_avp_media_handler_intersect_sdp_medias (KmsSdpMediaHandler *
 }
 
 static gboolean
-kms_sdp_rtp_avp_media_handler_init_offer (KmsSdpMediaHandler * handler,
+kms_sdp_rtp_avp_media_handler_is_valid_media (const gchar * media)
+{
+  return g_strcmp0 (media, SDP_AUDIO_MEDIA) == 0 ||
+      g_strcmp0 (media, SDP_VIDEO_MEDIA) == 0;
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_init_new_offer (KmsSdpMediaHandler * handler,
     const gchar * media, GstSDPMedia * offer, GError ** error)
 {
   gchar *proto = NULL;
   gboolean ret = TRUE;
 
-  if (g_strcmp0 (media, SDP_AUDIO_MEDIA) != 0
-      && g_strcmp0 (media, SDP_VIDEO_MEDIA) != 0) {
+  if (!kms_sdp_rtp_avp_media_handler_is_valid_media (media)) {
     g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_INVALID_MEDIA,
         "Unsupported '%s' media", media);
     ret = FALSE;
@@ -776,11 +787,76 @@ end:
 }
 
 static gboolean
-kms_sdp_rtp_avp_media_handler_add_offer_attributes (KmsSdpMediaHandler *
-    handler, GstSDPMedia * offer, GError ** error)
+kms_sdp_rtp_avp_media_handler_init_renegotiated_offer (KmsSdpMediaHandler *
+    handler, const gchar * media, GstSDPMedia * offer,
+    const GstSDPMedia * prev_offer, GError ** error)
 {
-  KmsSdpRtpAvpMediaHandler *self = KMS_SDP_RTP_AVP_MEDIA_HANDLER (handler);
+  const gchar *m = gst_sdp_media_get_media (prev_offer);
+  const gchar *proto;
+  guint port, num_ports;
 
+  if (g_strcmp0 (media, m) != 0) {
+    g_set_error_literal (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_INVALID_MEDIA,
+        "Previous offer has different media");
+    return FALSE;
+  }
+
+  if (!kms_sdp_rtp_avp_media_handler_is_valid_media (m)) {
+    g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_INVALID_MEDIA,
+        "Unsupported '%s' media", media);
+    return FALSE;
+  }
+
+  proto = gst_sdp_media_get_proto (prev_offer);
+
+  if (!kms_sdp_media_handler_manage_protocol (handler, proto)) {
+    g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_INVALID_PROTOCOL,
+        "Unexpected media protocol '%s'", gst_sdp_media_get_proto (offer));
+    return FALSE;
+  }
+
+  if (gst_sdp_media_set_media (offer, m) != GST_SDP_OK) {
+    g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+        "Can not set '%s' media", media);
+    return FALSE;
+  }
+
+  if (gst_sdp_media_set_proto (offer, proto) != GST_SDP_OK) {
+    g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+        "Can not set '%s' protocol", SDP_MEDIA_RTP_AVP_PROTO);
+    return FALSE;
+  }
+
+  port = gst_sdp_media_get_port (prev_offer);
+  num_ports = gst_sdp_media_get_num_ports (prev_offer);
+
+  if (gst_sdp_media_set_port_info (offer, port, num_ports) != GST_SDP_OK) {
+    g_set_error_literal (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+        "Can not set port");
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_init_offer (KmsSdpMediaHandler * handler,
+    const gchar * media, GstSDPMedia * offer, const GstSDPMedia * prev_offer,
+    GError ** error)
+{
+  if (prev_offer == NULL) {
+    return kms_sdp_rtp_avp_media_handler_init_new_offer (handler, media, offer,
+        error);
+  } else {
+    return kms_sdp_rtp_avp_media_handler_init_renegotiated_offer (handler,
+        media, offer, prev_offer, error);
+  }
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_add_new_offer_attributes (KmsSdpRtpAvpMediaHandler
+    * self, GstSDPMedia * offer, GError ** error)
+{
   if (!kms_sdp_rtp_avp_media_handler_add_supported_fmts (self, offer, error)) {
     return FALSE;
   }
@@ -793,10 +869,137 @@ kms_sdp_rtp_avp_media_handler_add_offer_attributes (KmsSdpMediaHandler *
     return FALSE;
   }
 
+  return TRUE;
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_set_supported_fmts (KmsSdpRtpAvpMediaHandler *
+    self, const GstSDPMedia * origin, GstSDPMedia * target, GError ** error)
+{
+  guint i, len;
+
+  len = gst_sdp_media_formats_len (origin);
+
+  /* Set only supported media formats in target */
+  for (i = 0; i < len; i++) {
+    const gchar *fmt;
+
+    fmt = gst_sdp_media_get_format (origin, i);
+
+    if (!kms_sdp_rtp_avp_media_handler_format_supported (self, origin, fmt)) {
+      continue;
+    }
+
+    if (gst_sdp_media_add_format (target, fmt) != GST_SDP_OK) {
+      g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+          "Can add format '%s'", fmt);
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_add_supported_fmtp (KmsSdpRtpAvpMediaHandler *
+    self, const GstSDPMedia * prev_offer, GstSDPMedia * offer, GError ** error)
+{
+  guint i, len;
+
+  len = gst_sdp_media_formats_len (offer);
+
+  for (i = 0; i < len; i++) {
+    const gchar *payload;
+    const gchar *fmtp;
+
+    payload = gst_sdp_media_get_format (prev_offer, i);
+
+    if (payload == NULL) {
+      g_set_error_literal (error, KMS_SDP_AGENT_ERROR,
+          SDP_AGENT_UNEXPECTED_ERROR, "Can not add payloads to the offer");
+      return FALSE;
+    }
+
+    fmtp = sdp_utils_sdp_media_get_fmtp (prev_offer, payload);
+
+    if (fmtp == NULL) {
+      continue;
+    }
+
+    if (gst_sdp_media_add_attribute (offer, "fmtp", fmtp) != GST_SDP_OK) {
+      g_set_error_literal (error, KMS_SDP_AGENT_ERROR,
+          SDP_AGENT_UNEXPECTED_ERROR, "Can not add fmtp attribute to offer");
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+static gboolean
+    kms_sdp_rtp_avp_media_handler_add_negotiated_offer_attributes
+    (KmsSdpRtpAvpMediaHandler * self, GstSDPMedia * offer,
+    const GstSDPMedia * prev_offer, GError ** error)
+{
+  guint port, num_ports;
+
+  if (!kms_sdp_rtp_avp_media_handler_set_supported_fmts (self, prev_offer,
+          offer, error)) {
+    return FALSE;
+  }
+
+  if (gst_sdp_media_formats_len (offer) > 0) {
+    port = gst_sdp_media_get_port (prev_offer);
+    num_ports = gst_sdp_media_get_num_ports (prev_offer);
+  } else {
+    /* Disable media */
+    port = 0;
+    num_ports = 1;
+  }
+
+  if (gst_sdp_media_set_port_info (offer, port, num_ports) != GST_SDP_OK) {
+    g_set_error_literal (error, KMS_SDP_AGENT_ERROR,
+        SDP_AGENT_INVALID_PARAMETER, "Can not set port attribute");
+    return FALSE;
+  }
+
+  if (!kms_sdp_rtp_avp_media_handler_add_supported_extmaps (self, prev_offer,
+          offer, error)) {
+    return FALSE;
+  }
+
+  if (!kms_sdp_rtp_avp_media_handler_add_supported_rtpmap_attrs (self,
+          prev_offer, offer, error)) {
+    return FALSE;
+  }
+
+  return kms_sdp_rtp_avp_media_handler_add_supported_fmtp (self, prev_offer,
+      offer, error);
+}
+
+static gboolean
+kms_sdp_rtp_avp_media_handler_add_offer_attributes (KmsSdpMediaHandler *
+    handler, GstSDPMedia * offer, const GstSDPMedia * prev_offer,
+    GError ** error)
+{
+  KmsSdpRtpAvpMediaHandler *self = KMS_SDP_RTP_AVP_MEDIA_HANDLER (handler);
+
+  if (prev_offer == NULL) {
+    if (!kms_sdp_rtp_avp_media_handler_add_new_offer_attributes (self, offer,
+            error)) {
+      return FALSE;
+    }
+  } else {
+    if (!kms_sdp_rtp_avp_media_handler_add_negotiated_offer_attributes (self,
+            offer, prev_offer, error)) {
+      return FALSE;
+    }
+  }
+
   /* Chain up */
   return
       KMS_SDP_MEDIA_HANDLER_CLASS (parent_class)->add_offer_attributes (handler,
-      offer, error);
+      offer, prev_offer, error);
 }
 
 static gboolean
@@ -845,11 +1048,6 @@ kms_sdp_rtp_avp_media_handler_add_answer_attributes_impl (KmsSdpMediaHandler *
 
   len = gst_sdp_media_formats_len (offer);
 
-  if (!KMS_SDP_MEDIA_HANDLER_CLASS (parent_class)->add_answer_attributes
-      (handler, offer, answer, error)) {
-    return FALSE;
-  }
-
   /* Set only supported media formats in answer */
   for (i = 0; i < len; i++) {
     const gchar *fmt;
@@ -882,6 +1080,11 @@ kms_sdp_rtp_avp_media_handler_add_answer_attributes_impl (KmsSdpMediaHandler *
 
   if (!kms_sdp_rtp_avp_media_handler_add_supported_extmaps (self, offer,
           answer, error)) {
+    return FALSE;
+  }
+
+  if (!KMS_SDP_MEDIA_HANDLER_CLASS (parent_class)->add_answer_attributes
+      (handler, offer, answer, error)) {
     return FALSE;
   }
 

@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -68,6 +70,21 @@ kms_sdp_bundle_group_add_media_handler (KmsSdpBaseGroup * grp,
       handler, error);
 }
 
+static gboolean
+kms_sdp_bundle_group_add_offer_attributes_impl (KmsSdpBaseGroup * self,
+    GstSDPMessage * offer, GError ** error)
+{
+  if (gst_sdp_message_get_attribute_val (offer, "group") != NULL) {
+    /* FIXME: Old API still inserts group attributes, do not insert here */
+    /* until we remove it once and for all */
+    /* TODO: Check if group is bundle and if there are the same handlers in it */
+    return TRUE;
+  }
+
+  return KMS_SDP_BASE_GROUP_CLASS (parent_class)->add_offer_attributes (self,
+      offer, error);
+}
+
 static void
 kms_sdp_bundle_group_class_init (KmsSdpBundleGroupClass * klass)
 {
@@ -78,6 +95,8 @@ kms_sdp_bundle_group_class_init (KmsSdpBundleGroupClass * klass)
   gobject_class->finalize = kms_sdp_bundle_group_finalize;
 
   base_group_class = KMS_SDP_BASE_GROUP_CLASS (klass);
+  base_group_class->add_offer_attributes =
+      kms_sdp_bundle_group_add_offer_attributes_impl;
   base_group_class->add_media_handler = kms_sdp_bundle_group_add_media_handler;
 
   g_type_class_add_private (klass, sizeof (KmsSdpBundleGroupPrivate));

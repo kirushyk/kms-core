@@ -1,7 +1,22 @@
+/*
+ * (C) Copyright 2016 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 #ifndef __MEDIA_OBJECT_IMPL_HPP__
 #define __MEDIA_OBJECT_IMPL_HPP__
 
-#include <Factory.hpp>
 #include "MediaObject.hpp"
 #include <EventHandler.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -18,6 +33,7 @@ namespace kurento
 
 class MediaPipelineImpl;
 class MediaObjectImpl;
+class MediaSet;
 
 void Serialize (std::shared_ptr<MediaObjectImpl> &object,
                 JsonSerializer &serializer);
@@ -41,11 +57,13 @@ public:
 
   virtual std::shared_ptr<MediaPipeline> getMediaPipeline ();
 
-  virtual std::shared_ptr<MediaObject> getParent () {
+  virtual std::shared_ptr<MediaObject> getParent ()
+  {
     return parent;
   }
 
   virtual std::vector<std::shared_ptr<MediaObject>> getChilds ();
+  virtual std::vector<std::shared_ptr<MediaObject>> getChildren ();
 
   virtual std::string getId ();
 
@@ -57,7 +75,8 @@ public:
 
   virtual int getCreationTime ();
 
-  virtual void release () {
+  virtual void release ()
+  {
 
   }
 
@@ -73,10 +92,10 @@ public:
 
   virtual void Serialize (JsonSerializer &serializer);
 
-protected:
-
   template <class T>
-  T getConfigValue (const std::string &key) {
+  static T getConfigValue (const boost::property_tree::ptree &config,
+                           const std::string &key)
+  {
     auto child = config.get_child (key);
     std::stringstream ss;
     Json::Value val;
@@ -98,9 +117,11 @@ protected:
   }
 
   template <class T>
-  T getConfigValue (const std::string &key, T defaultValue) {
+  static T getConfigValue (const boost::property_tree::ptree &config,
+                           const std::string &key, T defaultValue)
+  {
     try {
-      return getConfigValue<T> (key);
+      return getConfigValue<T> (config, key);
     } catch (boost::property_tree::ptree_bad_path &e) {
       /* This case is expected, the config does not have the requested key */
     } catch (KurentoException &e) {
@@ -112,43 +133,34 @@ protected:
     return defaultValue;
   }
 
-  template <class T, class C>
-  T getConfigValue (const std::string &key) {
-    auto child = config.get_child ("modules." + dynamic_cast <C *>
-                                   (this)->getModule() + "."
-                                   + dynamic_cast <C *> (this)->getType() + "." + key);
-    std::stringstream ss;
-    Json::Value val;
-    Json::Reader reader;
-    kurento::JsonSerializer serializer (false);
-    boost::property_tree::ptree array;
+protected:
 
-    array.push_back (std::make_pair ("val", child) );
-    boost::property_tree::write_json (ss, array);
+  template <class T>
+  T getConfigValue (const std::string &key)
+  {
+    return getConfigValue <T> (config, key);
+  }
 
-    reader.parse (ss.str(), val);
-
-    T ret {};
-
-    serializer.JsonValue = val;
-    serializer.Serialize ("val", ret);
-
-    return ret;
+  template <class T>
+  T getConfigValue (const std::string &key, T defaultValue)
+  {
+    return getConfigValue <T> (config, key, defaultValue);
   }
 
   template <class T, class C>
-  T getConfigValue (const std::string &key, T defaultValue) {
-    try {
-      return getConfigValue<T, C> (key);
-    } catch (boost::property_tree::ptree_bad_path &e) {
-      /* This case is expected, the config does not have the requested key */
-    } catch (KurentoException &e) {
-      GST_WARNING ("Posible error deserializing %s from config", key.c_str() );
-    } catch (std::exception &e) {
-      GST_WARNING ("Unknown error getting%s from config", key.c_str() );
-    }
+  T getConfigValue (const std::string &key)
+  {
+    return getConfigValue <T> ("modules." + dynamic_cast <C *>
+                               (this)->getModule() + "."
+                               + dynamic_cast <C *> (this)->getType() + "." + key);
+  }
 
-    return defaultValue;
+  template <class T, class C>
+  T getConfigValue (const std::string &key, T defaultValue)
+  {
+    return getConfigValue <T> ("modules." + dynamic_cast <C *>
+                               (this)->getModule() + "."
+                               + dynamic_cast <C *> (this)->getType() + "." + key, defaultValue);
   }
 
   /*
@@ -181,7 +193,7 @@ private:
 
   static StaticConstructor staticConstructor;
 
-  friend Factory;
+  friend MediaSet;
 };
 
 } /* kurento */

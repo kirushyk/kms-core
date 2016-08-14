@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -21,6 +23,7 @@
 #include "kms-core-marshal.h"
 #include "sdp_utils.h"
 #include "sdpagent/kmssdprtpavpmediahandler.h"
+#include "sdpagent/kmssdpbundlegroup.h"
 
 #define PLUGIN_NAME "base_sdp_endpoint"
 
@@ -112,13 +115,54 @@ struct _KmsBaseSdpEndpointPrivate
 
 static gboolean
 kms_base_sdp_endpoint_configure_media (KmsSdpAgent * agent,
-    SdpMediaConfig * mconf, gpointer user_data)
+    KmsSdpMediaHandler * handler, SdpMediaConfig * mconf, gpointer user_data)
 {
   KmsSdpSession *sess = KMS_SDP_SESSION (user_data);
   KmsBaseSdpEndpointClass *base_sdp_endpoint_class =
       KMS_BASE_SDP_ENDPOINT_CLASS (G_OBJECT_GET_CLASS (sess->ep));
+  GstSDPMedia *media = kms_sdp_media_config_get_sdp_media (mconf);
+  gint id, index;
+
+  g_object_get (handler, "id", &id, "index", &index, NULL);
+
+  GST_LOG ("Handler id: %d, SDP index: %d, Media: %s", id, index,
+      gst_sdp_media_get_media (media));
 
   return base_sdp_endpoint_class->configure_media (sess->ep, sess, mconf);
+}
+
+static KmsSdpMediaHandler *
+on_handler_required_cb (KmsSdpAgent * agent, const GstSDPMedia * media,
+    gpointer user_data)
+{
+  KmsSdpSession *session = KMS_SDP_SESSION (user_data);
+
+  GST_LOG_OBJECT (session, "Ignored handler request for media '%s'",
+      gst_sdp_media_as_text (media));
+
+  return NULL;
+}
+
+static void
+on_media_answer_cb (KmsSdpAgent * agent, KmsSdpMediaHandler * handler,
+    SdpMediaConfig * mconf, gpointer user_data)
+{
+  KmsSdpSession *session = KMS_SDP_SESSION (user_data);
+
+  GST_LOG_OBJECT (session, "Answer media");
+
+  kms_base_sdp_endpoint_configure_media (agent, handler, mconf, user_data);
+}
+
+static void
+on_media_offer_cb (KmsSdpAgent * agent, KmsSdpMediaHandler * handler,
+    SdpMediaConfig * mconf, gpointer user_data)
+{
+  KmsSdpSession *session = KMS_SDP_SESSION (user_data);
+
+  GST_LOG_OBJECT (session, "Offered media");
+
+  kms_base_sdp_endpoint_configure_media (agent, handler, mconf, user_data);
 }
 
 static const gchar *
@@ -126,6 +170,7 @@ kms_base_sdp_endpoint_create_session (KmsBaseSdpEndpoint * self)
 {
   KmsBaseSdpEndpointClass *base_sdp_endpoint_class =
       KMS_BASE_SDP_ENDPOINT_CLASS (G_OBJECT_GET_CLASS (self));
+  KmsSdpAgentCallbacks callbacks;
   gint id;
   gchar *ret = NULL;
   KmsSdpSession *sess = NULL;
@@ -153,8 +198,12 @@ kms_base_sdp_endpoint_create_session (KmsBaseSdpEndpoint * self)
   gst_bin_add (GST_BIN (self), GST_ELEMENT (sess));
   gst_element_sync_state_with_parent (GST_ELEMENT (sess));
 
-  kms_sdp_agent_set_configure_media_callback (sess->agent,
-      kms_base_sdp_endpoint_configure_media, sess, NULL);
+  callbacks.on_handler_required = on_handler_required_cb;
+  callbacks.on_media_answer = on_media_answer_cb;
+  callbacks.on_media_answered = NULL;
+  callbacks.on_media_offer = on_media_offer_cb;
+
+  kms_sdp_agent_set_callbacks (sess->agent, &callbacks, sess, NULL);
 
   g_hash_table_insert (self->priv->sessions, g_strdup (sess->id_str), sess);
 
@@ -299,7 +348,7 @@ kms_base_sdp_endpoint_add_handler (KmsBaseSdpEndpoint * self,
   }
 
   if (bundle_group_id != -1) {
-    if (!kms_sdp_agent_add_handler_to_group (sess->agent, bundle_group_id, hid)) {
+    if (!kms_sdp_agent_group_add (sess->agent, bundle_group_id, hid)) {
       GST_ERROR_OBJECT (self,
           "Cannot add handler to bundle group for session '%" G_GINT32_FORMAT
           "'", sess->id);
@@ -323,7 +372,8 @@ kms_base_sdp_endpoint_init_sdp_handlers (KmsBaseSdpEndpoint * self,
 
   gid = -1;
   if (self->priv->bundle) {
-    gid = kms_sdp_agent_create_bundle_group (sess->agent);
+    gid = kms_sdp_agent_create_group (sess->agent, KMS_TYPE_SDP_BUNDLE_GROUP,
+        NULL);
     if (gid < 0) {
       GST_ERROR_OBJECT (self, "Cannot create bundle group.");
       return FALSE;

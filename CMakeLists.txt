@@ -21,14 +21,13 @@ get_git_version (PROJECT_VERSION ${VALUE_VERSION})
 install_git_hook (pre-commit ${CMAKE_CURRENT_SOURCE_DIR}/hooks/pre-commit.hook)
 
 set (GST_REQUIRED ^1.7.1)
-set (GLIB_REQUIRED ^2.46)
 set (JSON_RPC_REQUIRED ^1.1.0)
 set (SIGCPP_REQUIRED ^2.0.10)
 set (GLIBMM_REQUIRED ^2.37)
 
 include (GenericFind)
 
-generic_find (LIBNAME Boost REQUIRED COMPONENTS filesystem system unit_test_framework)
+generic_find (LIBNAME Boost REQUIRED COMPONENTS filesystem system unit_test_framework regex)
 
 #gst-plugins dependencies
 generic_find (LIBNAME gstreamer-1.5 VERSION ${GST_REQUIRED} REQUIRED)
@@ -62,6 +61,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -DHAVE_CONFIG_H -Werror -Wall -Werror=declaration-after-statement -Wno-deprecated-declarations -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -DHAVE_CONFIG_H -Wall -Werror -std=c++11")
+
+include(CheckCXXCompilerFlag)
+
+CHECK_CXX_COMPILER_FLAG("-Wno-error=date-time" COMPILER_SUPPORTS_DATETIME_ERROR)
+if (COMPILER_SUPPORTS_DATETIME_ERROR)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=date-time")
+endif ()
 
 enable_testing()
 

@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -121,6 +123,19 @@ kms_sdp_rtp_savpf_media_handler_new ()
   handler =
       KMS_SDP_RTP_SAVPF_MEDIA_HANDLER (g_object_new
       (KMS_TYPE_SDP_RTP_SAVPF_MEDIA_HANDLER, NULL));
+
+  return handler;
+}
+
+KmsSdpRtpSavpfMediaHandler *
+kms_sdp_rtp_savpf_media_handler_new_with_udp_tls ()
+{
+  KmsSdpRtpSavpfMediaHandler *handler;
+
+  handler =
+      KMS_SDP_RTP_SAVPF_MEDIA_HANDLER (g_object_new
+      (KMS_TYPE_SDP_RTP_SAVPF_MEDIA_HANDLER, "proto",
+          SDP_MEDIA_UDP_TLS_PROTO_INFO SDP_MEDIA_RTP_SAVPF_PROTO, NULL));
 
   return handler;
 }

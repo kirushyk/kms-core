@@ -1,3 +1,19 @@
+/*
+ * (C) Copyright 2016 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 #include <gst/gst.h>
 #include "MediaPipelineImpl.hpp"
 #include "MediaObjectImpl.hpp"
@@ -45,10 +61,10 @@ MediaObjectImpl::createId()
   std::string uuid = generateUUID();
 
   if (parent) {
-    std::shared_ptr<MediaPipelineImpl> pipeline;
+    std::shared_ptr<MediaObjectImpl> parent;
 
-    pipeline = std::dynamic_pointer_cast<MediaPipelineImpl> (getMediaPipeline() );
-    return pipeline->getId() + "/" +
+    parent = std::dynamic_pointer_cast<MediaObjectImpl> (getParent() );
+    return parent->getId() + "/" +
            uuid;
   } else {
     return uuid;
@@ -87,16 +103,23 @@ MediaObjectImpl::setName (const std::string &name)
   this->name = name;
 }
 
-std::vector<std::shared_ptr<MediaObject>> MediaObjectImpl::getChilds ()
+std::vector<std::shared_ptr<MediaObject>> MediaObjectImpl::getChildren ()
 {
-  std::vector<std::shared_ptr<MediaObject>> childs;
+  std::vector<std::shared_ptr<MediaObject>> children;
 
-  for (auto it : MediaSet::getMediaSet ()->getChilds (std::dynamic_pointer_cast
+  for (auto it : MediaSet::getMediaSet ()->getChildren (std::dynamic_pointer_cast
        <MediaObjectImpl> (shared_from_this() ) ) ) {
-    childs.push_back (it);
+    children.push_back (it);
   }
 
-  return childs;
+  return children;
+}
+
+std::vector<std::shared_ptr<MediaObject>> MediaObjectImpl::getChilds ()
+{
+  GST_ERROR ("Deprecated property. Use getChildren instead of this property");
+
+  return getChildren ();
 }
 
 bool MediaObjectImpl::getSendTagsInEvents ()

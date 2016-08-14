@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -42,15 +44,50 @@ GType kms_serializable_meta_api_get_type (void);
 #define KMS_SERIALIZABLE_META_API_TYPE \
   (kms_serializable_meta_api_get_type())
 
-#define kms_buffer_get_serializable_meta(b) \
-  ((KmsSerializableMeta*)gst_buffer_get_meta((b), KMS_SERIALIZABLE_META_API_TYPE))
+/**
+ * kms_buffer_get_serializable_meta
+ *
+ * This function is deprecated. Use this function could cause
+ * concurrency problems. Use kms_serializable_meta_get_metadata() instead of
+ * this one.
+ *
+ * This function returns the metadata into a buffer.
+ *
+ * @param b: the buffer which contains the metadata
+ * @return The metadata
+ */
+KmsSerializableMeta* kms_buffer_get_serializable_meta (GstBuffer * b) __attribute__ ((deprecated));
 
 /* implementation */
 const GstMetaInfo *kms_serializable_meta_get_info (void);
 #define KMS_SERIALIZABLE_META_INFO (kms_serializable_meta_get_info ())
 
+
+/**
+ * kms_buffer_add_serializable_meta
+ *
+ * If the buffer doesn't contains any metadata of type KMS_SERIALIZABLE_META_INFO,
+ * the data will be inserted, else the data contained in the buffer is merged
+ * with the new data passed by the user. In case of collision, the old data
+ * will be overwritten.
+ *
+ * @param buffer: the buffer where add the metadata
+ * @param data: the structure to add as metadata
+ * @return The metadata inserted in the buffer
+ */
 KmsSerializableMeta * kms_buffer_add_serializable_meta (GstBuffer *buffer,
   GstStructure *data);
+
+/**
+ * kms_serializable_meta_get_metadata
+ *
+ * This function returns the metadata into a buffer. The metadata has the same
+ * life cycle than the type which contains it in the buffer.
+ *
+ * @param b: the buffer which contains the metadata
+ * @return The metadata [transfer none]
+ */
+GstStructure * kms_serializable_meta_get_metadata (GstBuffer *buffer);
 
 G_END_DECLS
 

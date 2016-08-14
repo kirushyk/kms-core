@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -33,7 +35,10 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
 G_DEFINE_TYPE (KmsBaseRtpSession, kms_base_rtp_session, KMS_TYPE_SDP_SESSION);
 
 #define BUNDLE_CONN_ADDED "bundle-conn-added"
+G_DEFINE_QUARK (BUNDLE_CONN_ADDED, bundle_conn_added);
+
 #define RTCP_DEMUX_PEER "rtcp-demux-peer"
+G_DEFINE_QUARK (RTCP_DEMUX_PEER, rtcp_demux_peer);
 
 struct _KmsBaseRTPSessionStats
 {
@@ -246,7 +251,7 @@ ssrcs_are_mapped (GstElement * ssrcdemux,
     guint32 local_ssrc, guint32 remote_ssrc)
 {
   GstElement *rtcpdemux =
-      g_object_get_data (G_OBJECT (ssrcdemux), RTCP_DEMUX_PEER);
+      g_object_get_qdata (G_OBJECT (ssrcdemux), rtcp_demux_peer_quark ());
   guint local_ssrc_pair;
 
   g_signal_emit_by_name (rtcpdemux, "get-local-rr-ssrc-pair", remote_ssrc,
@@ -324,12 +329,13 @@ kms_base_rtp_session_add_bundle_connection (KmsBaseRtpSession * self,
   GstElement *rtcpdemux;        /* FIXME: Useful for local and remote ssrcs mapping */
   GstPad *src, *sink;
 
-  if (GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (conn), BUNDLE_CONN_ADDED))) {
+  if (GPOINTER_TO_UINT (g_object_get_qdata (G_OBJECT (conn),
+              bundle_conn_added_quark ()))) {
     GST_DEBUG_OBJECT (self, "Connection configured");
     return;
   }
 
-  g_object_set_data (G_OBJECT (conn), BUNDLE_CONN_ADDED,
+  g_object_set_qdata (G_OBJECT (conn), bundle_conn_added_quark (),
       GUINT_TO_POINTER (TRUE));
 
   g_object_get (conn, "added", &added, NULL);
@@ -340,7 +346,7 @@ kms_base_rtp_session_add_bundle_connection (KmsBaseRtpSession * self,
   ssrcdemux = gst_element_factory_make ("rtpssrcdemux", NULL);
   rtcpdemux = gst_element_factory_make ("rtcpdemux", NULL);
 
-  g_object_set_data_full (G_OBJECT (ssrcdemux), RTCP_DEMUX_PEER,
+  g_object_set_qdata_full (G_OBJECT (ssrcdemux), rtcp_demux_peer_quark (),
       g_object_ref (rtcpdemux), g_object_unref);
   g_signal_connect (ssrcdemux, "new-ssrc-pad",
       G_CALLBACK (rtp_ssrc_demux_new_ssrc_pad), self);

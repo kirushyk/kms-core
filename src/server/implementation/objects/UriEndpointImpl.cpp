@@ -1,8 +1,25 @@
+/*
+ * (C) Copyright 2016 Kurento (http://kurento.org/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 #include <gst/gst.h>
 #include "UriEndpointImpl.hpp"
 #include <jsonrpc/JsonSerializer.hpp>
 #include <KurentoException.hpp>
 #include <gst/gst.h>
+#include <boost/regex.hpp>
 
 #define GST_CAT_DEFAULT kurento_uri_endpoint_impl
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
@@ -20,6 +37,36 @@ typedef enum {
   KMS_URI_END_POINT_STATE_PAUSE
 } KmsUriEndPointState;
 
+void UriEndpointImpl::removeDuplicateSlashes (std::string &uri)
+{
+  boost::regex re ("//*");
+  gchar *location, *protocol;
+
+  location = gst_uri_get_location (uri.c_str () );
+  protocol = gst_uri_get_protocol (uri.c_str () );
+
+  std::string uriWithoutProtocol (location );
+  std::string uriProtocol (protocol );
+
+  g_free (location);
+  g_free (protocol);
+
+  // if protocol is file:/// glib only remove the two first slashes and we need
+  // to remove the last one.
+  if (uriWithoutProtocol[0] == '/') {
+    uriWithoutProtocol.erase (0, 1);
+  }
+
+  std::string uriWithoutSlash (boost::regex_replace (uriWithoutProtocol, re,
+                               "/") );
+
+  if (uriProtocol == "file") {
+    uri = uriProtocol + ":///" + uriWithoutSlash;
+  } else {
+    uri = uriProtocol + "://" + uriWithoutSlash;
+  }
+}
+
 void UriEndpointImpl::checkUri ()
 {
   this->absolute_uri = this->uri;
@@ -31,8 +78,10 @@ void UriEndpointImpl::checkUri ()
     path = getConfigValue <std::string, UriEndpoint> (DEFAULT_PATH,
            DEFAULT_PATH_VALUE);
 
-    this->absolute_uri = path + this->uri;
+    this->absolute_uri = path + "/" + this->uri;
   }
+
+  removeDuplicateSlashes (this->absolute_uri);
 }
 
 UriEndpointImpl::UriEndpointImpl (const boost::property_tree::ptree &config,

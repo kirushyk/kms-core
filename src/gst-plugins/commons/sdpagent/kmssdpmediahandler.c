@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -94,6 +96,8 @@ static KmsSdpSupportedAttrType attributes[] = {
 enum
 {
   PROP_0,
+  PROP_ID,
+  PROP_INDEX,
   PROP_PROTO,
   PROP_ADDR,
   PROP_ADDR_TYPE,
@@ -115,6 +119,8 @@ struct _KmsSdpMediaHandlerPrivate
   gchar *addr_type;
   GArray *bwtypes;
   GSList *extensions;
+  gint id;
+  KmsSdpAgent *parent;
 };
 
 static void
@@ -124,6 +130,20 @@ kms_sdp_media_handler_get_property (GObject * object, guint prop_id,
   KmsSdpMediaHandler *self = KMS_SDP_MEDIA_HANDLER (object);
 
   switch (prop_id) {
+    case PROP_ID:
+      g_value_set_int (value, self->priv->id);
+      break;
+    case PROP_INDEX:{
+      gint ret = -1;
+
+      if (self->priv->id >= 0 && self->priv->parent != NULL) {
+        ret = kms_sdp_agent_get_handler_index (self->priv->parent,
+            self->priv->id);
+      }
+
+      g_value_set_int (value, ret);
+      break;
+    }
     case PROP_PROTO:
       g_value_set_string (value, self->priv->proto);
       break;
@@ -183,7 +203,7 @@ kms_sdp_media_handler_finalize (GObject * object)
 
 static GstSDPMedia *
 kms_sdp_media_handler_create_offer_impl (KmsSdpMediaHandler * handler,
-    const gchar * media, GError ** error)
+    const gchar * media, const GstSDPMedia * offer, GError ** error)
 {
   g_set_error_literal (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
       "Not implemented");
@@ -314,7 +334,8 @@ kms_sdp_media_handler_intersect_sdp_medias_impl (KmsSdpMediaHandler * handler,
 
 static gboolean
 kms_sdp_media_handler_init_offer_impl (KmsSdpMediaHandler * handler,
-    const gchar * media, GstSDPMedia * offer, GError ** error)
+    const gchar * media, GstSDPMedia * offer, const GstSDPMedia * prev_offer,
+    GError ** error)
 {
   g_set_error_literal (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
       "Media offert initialization is not implemented");
@@ -324,7 +345,7 @@ kms_sdp_media_handler_init_offer_impl (KmsSdpMediaHandler * handler,
 
 static gboolean
 kms_sdp_media_handler_add_offer_attributes_impl (KmsSdpMediaHandler * handler,
-    GstSDPMedia * offer, GError ** error)
+    GstSDPMedia * offer, const GstSDPMedia * prev_offer, GError ** error)
 {
   GError *err = NULL;
   GSList *l;
@@ -389,6 +410,21 @@ kms_sdp_media_handler_add_answer_attributes_impl (KmsSdpMediaHandler * handler,
   return TRUE;
 }
 
+static gboolean
+kms_sdp_media_handler_set_id_impl (KmsSdpMediaHandler * handler, guint id,
+    GError ** error)
+{
+  if (handler->priv->id >= 0) {
+    g_set_error (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+        "Media handler already has an assigned id = %u", handler->priv->id);
+    return FALSE;
+  }
+
+  handler->priv->id = id;
+
+  return TRUE;
+}
+
 static void
 kms_sdp_media_handler_class_init (KmsSdpMediaHandlerClass * klass)
 {
@@ -413,6 +449,17 @@ kms_sdp_media_handler_class_init (KmsSdpMediaHandlerClass * klass)
           "Address type", "Address type either IP4 or IP6", DEFAULT_ADDR_TYPE,
           G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS));
 
+  g_object_class_install_property (gobject_class, PROP_ID,
+      g_param_spec_int ("id", "Identifier",
+          "Identifier assigned by an SDP agent", -1, G_MAXINT, -1,
+          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class, PROP_INDEX,
+      g_param_spec_int ("index", "SDP Index",
+          "Index which this handler has in the SDP message", -1, G_MAXINT, -1,
+          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+
+  klass->set_id = kms_sdp_media_handler_set_id_impl;
   klass->create_offer = kms_sdp_media_handler_create_offer_impl;
   klass->create_answer = kms_sdp_media_handler_create_answer_impl;
   klass->process_answer = kms_sdp_media_handler_process_answer_impl;
@@ -440,16 +487,18 @@ kms_sdp_media_handler_init (KmsSdpMediaHandler * self)
   self->priv->bwtypes = g_array_new (FALSE, TRUE, sizeof (GstSDPBandwidth));
   g_array_set_clear_func (self->priv->bwtypes,
       (GDestroyNotify) gst_sdp_bandwidth_clear);
+  self->priv->id = -1;
+  self->priv->parent = NULL;
 }
 
 GstSDPMedia *
 kms_sdp_media_handler_create_offer (KmsSdpMediaHandler * handler,
-    const gchar * media, GError ** error)
+    const gchar * media, const GstSDPMedia * prev_offer, GError ** error)
 {
   g_return_val_if_fail (KMS_IS_SDP_MEDIA_HANDLER (handler), NULL);
 
   return KMS_SDP_MEDIA_HANDLER_GET_CLASS (handler)->create_offer (handler,
-      media, error);
+      media, prev_offer, error);
 }
 
 GstSDPMedia *
@@ -502,4 +551,39 @@ kms_sdp_media_handler_add_media_extension (KmsSdpMediaHandler * handler,
   return
       KMS_SDP_MEDIA_HANDLER_GET_CLASS (handler)->add_media_extension (handler,
       ext);
+}
+
+gboolean
+kms_sdp_media_handler_set_id (KmsSdpMediaHandler * handler, guint id,
+    GError ** error)
+{
+  g_return_val_if_fail (KMS_IS_SDP_MEDIA_HANDLER (handler), FALSE);
+
+  return KMS_SDP_MEDIA_HANDLER_GET_CLASS (handler)->set_id (handler, id, error);
+}
+
+gboolean
+kms_sdp_media_handler_set_parent (KmsSdpMediaHandler * handler,
+    KmsSdpAgent * parent, GError ** error)
+{
+  g_return_val_if_fail (KMS_IS_SDP_MEDIA_HANDLER (handler), FALSE);
+  g_return_val_if_fail (KMS_IS_SDP_AGENT (parent), FALSE);
+
+  if (handler->priv->parent != NULL) {
+    g_set_error_literal (error, KMS_SDP_AGENT_ERROR, SDP_AGENT_UNEXPECTED_ERROR,
+        "Handler already has a parent");
+    return FALSE;
+  }
+
+  handler->priv->parent = parent;
+
+  return TRUE;
+}
+
+void
+kms_sdp_media_handler_remove_parent (KmsSdpMediaHandler * handler)
+{
+  g_return_if_fail (KMS_IS_SDP_MEDIA_HANDLER (handler));
+
+  handler->priv->parent = NULL;
 }

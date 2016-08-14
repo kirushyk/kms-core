@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -23,11 +25,12 @@
 #include "kmsparsetreebin.h"
 #include "kmsdectreebin.h"
 #include "kmsenctreebin.h"
+#include "kmsrtppaytreebin.h"
 
 #define PLUGIN_NAME "agnosticbin"
 
-#define LINKING_DATA "linking-data"
 #define UNLINKING_DATA "unlinking-data"
+G_DEFINE_QUARK (UNLINKING_DATA, unlinking_data);
 
 #define KMS_AGNOSTIC_PAD_STARTED (GST_PAD_FLAG_LAST << 1)
 
@@ -63,6 +66,7 @@ G_DEFINE_TYPE (KmsAgnosticBin2, kms_agnostic_bin2, GST_TYPE_BIN);
 #define TARGET_BITRATE_DEFAULT 300000
 #define MIN_BITRATE_DEFAULT 0
 #define MAX_BITRATE_DEFAULT G_MAXINT
+#define LEAKY_TIME 600000000    /*600 ms */
 
 struct _KmsAgnosticBin2Private
 {
@@ -85,6 +89,7 @@ struct _KmsAgnosticBin2Private
   gint min_bitrate;
 
   GstStructure *codec_config;
+  gboolean bitrate_unlimited;
 };
 
 enum
@@ -100,7 +105,7 @@ enum
 static GstStaticPadTemplate sink_factory = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS_ANY);
+    GST_STATIC_CAPS (KMS_AGNOSTIC_NO_RTP_CAPS_CAPS));
 
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src_%u",
     GST_PAD_SRC,
@@ -109,6 +114,9 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src_%u",
 
 static gboolean kms_agnostic_bin2_process_pad (KmsAgnosticBin2 * self,
     GstPad * pad);
+
+static GstBin *kms_agnostic_bin2_find_or_create_bin_for_caps (KmsAgnosticBin2 *
+    self, GstCaps * caps);
 
 static void
 kms_agnostic_bin2_insert_bin (KmsAgnosticBin2 * self, GstBin * bin)
@@ -164,7 +172,7 @@ static void
 remove_on_unlinked_async (gpointer data, gpointer not_used)
 {
   GstElement *elem = GST_ELEMENT_CAST (data);
-  GstObject *parent = gst_object_get_parent (GST_OBJECT (elem));
+  GstObject *parent;
 
   gst_element_set_locked_state (elem, TRUE);
   if (g_strcmp0 (GST_OBJECT_NAME (gst_element_get_factory (elem)),
@@ -172,13 +180,15 @@ remove_on_unlinked_async (gpointer data, gpointer not_used)
     g_object_set (G_OBJECT (elem), "flush-on-eos", TRUE, NULL);
     gst_element_send_event (elem, gst_event_new_eos ());
   }
-  gst_element_set_state (elem, GST_STATE_NULL);
+
+  parent = gst_object_get_parent (GST_OBJECT (elem));
   if (parent != NULL) {
     gst_bin_remove (GST_BIN (parent), elem);
     g_object_unref (parent);
   }
 
-  g_object_unref (data);
+  gst_element_set_state (elem, GST_STATE_NULL);
+  g_object_unref (elem);
 }
 
 static GstPadProbeReturn
@@ -194,7 +204,7 @@ remove_on_unlinked_blocked (GstPad * pad, GstPadProbeInfo * info, gpointer elem)
   GST_DEBUG_OBJECT (pad, "Unlinking pad");
 
   GST_OBJECT_LOCK (pad);
-  if (g_object_get_data (G_OBJECT (pad), UNLINKING_DATA)) {
+  if (g_object_get_qdata (G_OBJECT (pad), unlinking_data_quark ())) {
     GST_OBJECT_UNLOCK (pad);
     if (GST_PAD_PROBE_INFO_TYPE (info) & GST_PAD_PROBE_TYPE_QUERY_BOTH) {
       /* Queries must be answered */
@@ -204,7 +214,8 @@ remove_on_unlinked_blocked (GstPad * pad, GstPadProbeInfo * info, gpointer elem)
     }
   }
 
-  g_object_set_data (G_OBJECT (pad), UNLINKING_DATA, GINT_TO_POINTER (TRUE));
+  g_object_set_qdata (G_OBJECT (pad), unlinking_data_quark (),
+      GINT_TO_POINTER (TRUE));
 
   GST_OBJECT_UNLOCK (pad);
 
@@ -407,6 +418,10 @@ kms_agnostic_bin2_link_to_tee (KmsAgnosticBin2 * self, GstPad * pad,
     GstElement *rate = kms_utils_create_rate_for_caps (caps);
     GstElement *mediator = kms_utils_create_mediator_element (caps);
 
+    if (kms_utils_caps_are_video (caps)) {
+      g_object_set (queue, "leaky", 2, "max-size-time", LEAKY_TIME, NULL);
+    }
+
     remove_element_on_unlinked (convert, "src", "sink");
     if (rate) {
       remove_element_on_unlinked (rate, "src", "sink");
@@ -461,16 +476,21 @@ check_bin (KmsTreeBin * tree_bin, const GstCaps * caps)
     GST_TRACE_OBJECT (tree_bin, "Allowed caps are: %" GST_PTR_FORMAT,
         current_caps);
   } else {
-    gst_caps_ref (current_caps);
     GST_TRACE_OBJECT (tree_bin, "Current caps are: %" GST_PTR_FORMAT,
         current_caps);
   }
 
   if (current_caps != NULL) {
-    if (gst_caps_can_intersect (caps, current_caps)) {
+    //TODO: Remove this when problem in negotiation with features will be
+    //resolved
+    GstCaps *caps_without_features = gst_caps_make_writable (current_caps);
+
+    gst_caps_set_features (caps_without_features, 0,
+        gst_caps_features_new_empty ());
+    if (gst_caps_can_intersect (caps, caps_without_features)) {
       ret = TRUE;
     }
-    gst_caps_unref (current_caps);
+    gst_caps_unref (caps_without_features);
   }
 
   g_object_unref (tee_sink);
@@ -542,7 +562,7 @@ kms_agnostic_bin2_create_dec_bin (KmsAgnosticBin2 * self,
   output_tee =
       kms_tree_bin_get_output_tee (KMS_TREE_BIN (self->priv->input_bin));
   input_element = kms_tree_bin_get_input_element (KMS_TREE_BIN (dec_bin));
-  link_element_to_tee (output_tee, input_element);
+  gst_element_link (output_tee, input_element);
 
   return GST_BIN (dec_bin);
 }
@@ -584,11 +604,48 @@ kms_agnostic_bin2_get_or_create_dec_bin (KmsAgnosticBin2 * self, GstCaps * caps)
 }
 
 static GstBin *
+kms_agnostic_bin2_create_rtp_pay_bin (KmsAgnosticBin2 * self, GstCaps * caps)
+{
+  KmsRtpPayTreeBin *bin;
+  GstBin *enc_bin;
+  GstElement *output_tee, *input_element;
+  GstCaps *input_caps;
+  GstPad *sink;
+
+  bin = kms_rtp_pay_tree_bin_new (caps);
+
+  if (bin == NULL) {
+    return NULL;
+  }
+
+  gst_bin_add (GST_BIN (self), GST_ELEMENT (bin));
+  gst_element_sync_state_with_parent (GST_ELEMENT (bin));
+
+  input_element = kms_tree_bin_get_input_element (KMS_TREE_BIN (bin));
+  sink = gst_element_get_static_pad (input_element, "sink");
+  input_caps = gst_pad_query_caps (sink, NULL);
+  g_object_unref (sink);
+
+  enc_bin = kms_agnostic_bin2_find_or_create_bin_for_caps (self, input_caps);
+  kms_agnostic_bin2_insert_bin (self, GST_BIN (bin));
+  gst_caps_unref (input_caps);
+
+  output_tee = kms_tree_bin_get_output_tee (KMS_TREE_BIN (enc_bin));
+  gst_element_link (output_tee, input_element);
+
+  return GST_BIN (bin);
+}
+
+static GstBin *
 kms_agnostic_bin2_create_bin_for_caps (KmsAgnosticBin2 * self, GstCaps * caps)
 {
   GstBin *dec_bin;
   KmsEncTreeBin *enc_bin;
   GstElement *input_element, *output_tee;
+
+  if (kms_utils_caps_are_rtp (caps)) {
+    return kms_agnostic_bin2_create_rtp_pay_bin (self, caps);
+  }
 
   dec_bin = kms_agnostic_bin2_get_or_create_dec_bin (self, caps);
   if (dec_bin == NULL) {
@@ -612,11 +669,27 @@ kms_agnostic_bin2_create_bin_for_caps (KmsAgnosticBin2 * self, GstCaps * caps)
 
   output_tee = kms_tree_bin_get_output_tee (KMS_TREE_BIN (dec_bin));
   input_element = kms_tree_bin_get_input_element (KMS_TREE_BIN (enc_bin));
-  link_element_to_tee (output_tee, input_element);
+  gst_element_link (output_tee, input_element);
 
   kms_agnostic_bin2_insert_bin (self, GST_BIN (enc_bin));
 
   return GST_BIN (enc_bin);
+}
+
+static GstBin *
+kms_agnostic_bin2_find_or_create_bin_for_caps (KmsAgnosticBin2 * self,
+    GstCaps * caps)
+{
+  GstBin *bin;
+
+  bin = kms_agnostic_bin2_find_bin_for_caps (self, caps);
+
+  if (bin == NULL) {
+    bin = kms_agnostic_bin2_create_bin_for_caps (self, caps);
+    GST_DEBUG_OBJECT (self, "Created bin: %" GST_PTR_FORMAT, bin);
+  }
+
+  return bin;
 }
 
 /**
@@ -641,17 +714,14 @@ kms_agnostic_bin2_link_pad (KmsAgnosticBin2 * self, GstPad * pad, GstPad * peer)
   }
 
   GST_DEBUG ("Query caps are: %" GST_PTR_FORMAT, caps);
-  bin = kms_agnostic_bin2_find_bin_for_caps (self, caps);
-
-  if (bin == NULL) {
-    bin = kms_agnostic_bin2_create_bin_for_caps (self, caps);
-    GST_DEBUG_OBJECT (self, "Created bin: %" GST_PTR_FORMAT, bin);
-  }
+  bin = kms_agnostic_bin2_find_or_create_bin_for_caps (self, caps);
 
   if (bin != NULL) {
     GstElement *tee = kms_tree_bin_get_output_tee (KMS_TREE_BIN (bin));
 
-    kms_utils_drop_until_keyframe (pad, TRUE);
+    if (!kms_utils_caps_are_rtp (caps)) {
+      kms_utils_drop_until_keyframe (pad, TRUE);
+    }
     kms_agnostic_bin2_link_to_tee (self, pad, tee, caps);
   }
 
@@ -808,7 +878,7 @@ kms_agnostic_bin2_configure_input (KmsAgnosticBin2 * self, const GstCaps * caps)
   gst_element_sync_state_with_parent (GST_ELEMENT (parse_bin));
 
   input_element = kms_tree_bin_get_input_element (KMS_TREE_BIN (parse_bin));
-  link_element_to_tee (self->priv->input_tee, input_element);
+  gst_element_link (self->priv->input_tee, input_element);
 
   self->priv->started = FALSE;
 
@@ -1050,8 +1120,13 @@ kms_agnostic_bin2_set_property (GObject * object, guint property_id,
     case PROP_MAX_BITRATE:{
       gint v;
 
+      self->priv->bitrate_unlimited = FALSE;
       v = g_value_get_int (value);
       KMS_AGNOSTIC_BIN2_LOCK (self);
+      if (v == 0) {
+        self->priv->bitrate_unlimited = TRUE;
+        v = MAX_BITRATE_DEFAULT;
+      }
       if (v < self->priv->min_bitrate) {
         v = self->priv->min_bitrate;
 
@@ -1092,7 +1167,11 @@ kms_agnostic_bin2_get_property (GObject * object, guint property_id,
       break;
     case PROP_MAX_BITRATE:
       KMS_AGNOSTIC_BIN2_LOCK (self);
-      g_value_set_int (value, self->priv->max_bitrate);
+      if (self->priv->bitrate_unlimited) {
+        g_value_set_int (value, 0);
+      } else {
+        g_value_set_int (value, self->priv->max_bitrate);
+      }
       KMS_AGNOSTIC_BIN2_UNLOCK (self);
       break;
     case PROP_CODEC_CONFIG:
@@ -1270,6 +1349,7 @@ kms_agnostic_bin2_init (KmsAgnosticBin2 * self)
   g_rec_mutex_init (&self->priv->thread_mutex);
   self->priv->min_bitrate = MIN_BITRATE_DEFAULT;
   self->priv->max_bitrate = MAX_BITRATE_DEFAULT;
+  self->priv->bitrate_unlimited = FALSE;
 }
 
 gboolean

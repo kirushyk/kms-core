@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2013 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -17,6 +19,7 @@
 #define __SDP_H__
 
 #include <gst/sdp/gstsdpmessage.h>
+#include "gstsdpdirection.h"
 
 #define SENDONLY_STR  "sendonly"
 #define RECVONLY_STR  "recvonly"
@@ -31,14 +34,6 @@
 
 #define EXT_MAP "extmap"
 
-typedef enum GstSDPDirection
-{
-  SENDONLY,
-  RECVONLY,
-  SENDRECV,
-  INACTIVE
-} GstSDPDirection;
-
 typedef gboolean (*GstSDPMediaFunc) (const GstSDPMedia *media, gpointer user_data);
 typedef gboolean (*GstSDPIntersectMediaFunc) (const GstSDPAttribute *attr, gpointer user_data);
 
@@ -47,6 +42,7 @@ gboolean sdp_utils_attribute_is_direction (const GstSDPAttribute * attr, GstSDPD
 guint sdp_utils_media_get_ssrc (const GstSDPMedia * media);
 guint sdp_utils_media_get_fid_ssrc (const GstSDPMedia * media, guint pos);
 GstSDPDirection sdp_utils_media_config_get_direction (const GstSDPMedia * media);
+gboolean sdp_utils_media_config_set_direction (GstSDPMedia * media, GstSDPDirection direction);
 
 const gchar *sdp_utils_sdp_media_get_rtpmap (const GstSDPMedia * media,
     const gchar * format);
@@ -68,5 +64,9 @@ gboolean sdp_utils_equal_medias (const GstSDPMedia * m1, const GstSDPMedia * m2)
 gboolean sdp_utils_equal_messages (const GstSDPMessage * msg1, const GstSDPMessage * msg2);
 
 gboolean sdp_utils_get_data_from_rtpmap (const gchar * rtpmap, gchar ** codec_name, gint * clock_rate);
+gboolean sdp_utils_get_data_from_rtpmap_codec (const GstSDPMedia * media, const gchar * codec, gint *pt, gint * clock_rate);
+gboolean sdp_utils_is_pt_in_fmts (const GstSDPMedia * media, gint pt);
+
+gint sdp_utils_get_pt_for_codec_name (const GstSDPMedia *media, const gchar *codec_name);
 
 #endif /* __SDP_H__ */

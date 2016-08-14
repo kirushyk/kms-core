@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #include <gst/check/gstcheck.h>
@@ -19,8 +21,8 @@
 #define KMS_VIDEO_PREFIX "video_src_"
 #define KMS_AUDIO_PREFIX "audio_src_"
 
-#define AUDIO_SINK "audio-sink"
 #define VIDEO_SINK "video-sink"
+G_DEFINE_QUARK (VIDEO_SINK, video_sink);
 
 #define BITRATE 500000
 
@@ -77,7 +79,7 @@ fakesink_hand_off_check_size (GstElement * fakesink, GstBuffer * buf,
     // TODO: Count for size
     GST_INFO ("Bitrate is: %ld bits", bitrate);
 
-    fail_if (abs (bitrate - BITRATE) > BITRATE * 0.15);
+    fail_if (abs ((int) ((gssize) bitrate - BITRATE)) > BITRATE * 0.15);
     g_object_set (G_OBJECT (fakesink), "signal-handoffs", FALSE, NULL);
     g_idle_add (quit_main_loop_idle, loop);
   }
@@ -146,11 +148,11 @@ connect_sink_on_srcpad_added (GstElement * element, GstPad * pad)
   GST_DEBUG_OBJECT (element, "Added pad %" GST_PTR_FORMAT, pad);
 
   if (g_str_has_prefix (GST_PAD_NAME (pad), KMS_AUDIO_PREFIX)) {
-    GST_DEBUG_OBJECT (pad, "Connecting video stream");
-    sink = g_object_get_data (G_OBJECT (element), AUDIO_SINK);
+    GST_ERROR_OBJECT (pad, "Not connecting audio stream, it is not expected");
+    return;
   } else if (g_str_has_prefix (GST_PAD_NAME (pad), KMS_VIDEO_PREFIX)) {
-    GST_DEBUG_OBJECT (pad, "Connecting audio stream");
-    sink = g_object_get_data (G_OBJECT (element), VIDEO_SINK);
+    GST_DEBUG_OBJECT (pad, "Connecting video stream");
+    sink = g_object_get_qdata (G_OBJECT (element), video_sink_quark ());
   } else {
     GST_TRACE_OBJECT (pad, "Not src pad type");
     return;
@@ -210,7 +212,7 @@ GST_START_TEST (check_connecion)
   g_signal_connect (G_OBJECT (fakesink), "handoff",
       G_CALLBACK (fakesink_hand_off), loop);
 
-  g_object_set_data (G_OBJECT (passthrough), VIDEO_SINK, fakesink);
+  g_object_set_qdata (G_OBJECT (passthrough), video_sink_quark (), fakesink);
   g_signal_connect (passthrough, "pad-added",
       G_CALLBACK (on_pad_added_cb), &data);
 
@@ -273,7 +275,7 @@ GST_START_TEST (check_bitrate)
   g_object_set (passthrough, "min-output-bitrate", BITRATE,
       "max-output-bitrate", BITRATE, NULL);
 
-  g_object_set_data (G_OBJECT (passthrough), VIDEO_SINK, capsfilter);
+  g_object_set_qdata (G_OBJECT (passthrough), video_sink_quark (), capsfilter);
   g_signal_connect (passthrough, "pad-added",
       G_CALLBACK (on_pad_added_cb), NULL);
 

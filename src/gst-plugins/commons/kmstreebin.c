@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -18,6 +20,7 @@
 #endif
 
 #include "kmstreebin.h"
+#include "kmsutils.h"
 
 #define GST_DEFAULT_NAME "treebin"
 #define GST_CAT_DEFAULT kms_tree_bin_debug
@@ -38,6 +41,7 @@ struct _KmsTreeBinPrivate
 {
   GstElement *input_element, *output_tee;
   GstCaps *input_caps;
+  GMutex input_caps_mutex;
 };
 
 GstElement *
@@ -94,18 +98,27 @@ kms_tree_bin_unlink_input_element_from_tee (KmsTreeBin * self)
 GstCaps *
 kms_tree_bin_get_input_caps (KmsTreeBin * self)
 {
-  return self->priv->input_caps;
+  GstCaps *ret = NULL;
+
+  g_mutex_lock (&self->priv->input_caps_mutex);
+  if (self->priv->input_caps != NULL) {
+    ret = gst_caps_ref (self->priv->input_caps);
+  }
+  g_mutex_unlock (&self->priv->input_caps_mutex);
+
+  return ret;
 }
 
 static void
 kms_tree_bin_set_input_caps (KmsTreeBin * self, GstCaps * caps)
 {
+  g_mutex_lock (&self->priv->input_caps_mutex);
   if (self->priv->input_caps) {
     gst_caps_unref (self->priv->input_caps);
-    self->priv->input_caps = NULL;
   }
 
   self->priv->input_caps = gst_caps_ref (caps);
+  g_mutex_unlock (&self->priv->input_caps_mutex);
 }
 
 static gboolean
@@ -135,7 +148,10 @@ tee_event_function (GstPad * pad, GstObject * parent, GstEvent * event)
     kms_tree_bin_set_input_caps (self, caps);
   }
 
-  return gst_pad_event_default (pad, parent, event);
+  gst_event_unref (event);
+
+  /* Return TRUE so that next handler chained can manage this stuff too */
+  return TRUE;
 }
 
 static void
@@ -147,6 +163,9 @@ kms_tree_bin_finalize (GObject * object)
     gst_caps_unref (self->priv->input_caps);
     self->priv->input_caps = NULL;
   }
+
+  g_mutex_clear (&self->priv->input_caps_mutex);
+
   /* chain up */
   G_OBJECT_CLASS (kms_tree_bin_parent_class)->finalize (object);
 }
@@ -159,6 +178,8 @@ kms_tree_bin_init (KmsTreeBin * self)
 
   self->priv = KMS_TREE_BIN_GET_PRIVATE (self);
 
+  g_mutex_init (&self->priv->input_caps_mutex);
+
   self->priv->output_tee = gst_element_factory_make ("tee", NULL);
   fakesink = gst_element_factory_make ("fakesink", NULL);
   g_object_set (fakesink, "async", FALSE, "sync", FALSE, NULL);
@@ -166,7 +187,8 @@ kms_tree_bin_init (KmsTreeBin * self)
   sink = gst_element_get_static_pad (self->priv->output_tee, "sink");
   if (sink) {
     gst_pad_set_query_function (sink, tee_query_function);
-    gst_pad_set_event_function (sink, tee_event_function);
+    kms_utils_set_pad_event_function_full (sink, tee_event_function, NULL, NULL,
+        TRUE);
     g_object_unref (sink);
   }
 

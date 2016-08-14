@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2014 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -25,7 +27,6 @@
 #include "kmsagnosticbin.h"
 
 #define PLUGIN_NAME "kmsaudiomixer"
-#define KEY_SINK_PAD_NAME "kms-key-sink-pad-name"
 
 #define LATENCY 150             //ms
 
@@ -46,10 +47,20 @@ GST_DEBUG_CATEGORY_STATIC (kms_audio_mixer_debug_category);
   )                                        \
 )
 
-#define KEY_TEE "tee_key"
-#define KEY_FAKESINK "fakesink_key"
-#define KEY_SRC "src_key"
-#define KEY_PAD "pad_key"
+#define KEY_SINK_PAD_NAME "kms-key-sink-pad-name"
+G_DEFINE_QUARK (KEY_SINK_PAD_NAME, key_sink_pad_name);
+
+#define KEY_TEE "tee-key"
+G_DEFINE_QUARK (KEY_TEE, key_tee);
+
+#define KEY_FAKESINK "fakesink-key"
+G_DEFINE_QUARK (KEY_FAKESINK, key_fakesink);
+
+#define KEY_SRC "src-key"
+G_DEFINE_QUARK (KEY_SRC, key_src);
+
+#define KEY_PAD "pad-key"
+G_DEFINE_QUARK (KEY_PAD, key_pad);
 
 struct _KmsAudioMixerPrivate
 {
@@ -100,9 +111,9 @@ cb_latency (GstPad * pad, GstPadProbeInfo * info, gpointer data)
       LATENCY * GST_MSECOND);
 
   gst_query_set_latency (GST_PAD_PROBE_INFO_QUERY (info),
-      TRUE, LATENCY * GST_MSECOND, LATENCY * GST_MSECOND);
+      TRUE, 0, LATENCY * GST_MSECOND);
 
-  return GST_PAD_PROBE_OK;
+  return GST_PAD_PROBE_HANDLED;
 }
 
 static GstElement *
@@ -128,7 +139,8 @@ link_new_agnosticbin (gchar * key, GstElement * adder, GstElement * agnosticbin)
   KmsAudioMixer *self = KMS_AUDIO_MIXER (GST_OBJECT_PARENT (agnosticbin));
   GstElement *capsfilter;
 
-  padname = g_object_get_data (G_OBJECT (agnosticbin), KEY_SINK_PAD_NAME);
+  padname =
+      g_object_get_qdata (G_OBJECT (agnosticbin), key_sink_pad_name_quark ());
   if (padname == NULL) {
     GST_ERROR ("No pad associated with %" GST_PTR_FORMAT, agnosticbin);
     goto end;
@@ -147,7 +159,7 @@ link_new_agnosticbin (gchar * key, GstElement * adder, GstElement * agnosticbin)
   }
 
   sinkpad = gst_element_get_request_pad (adder, "sink_%u");
-  if (srcpad == NULL) {
+  if (sinkpad == NULL) {
     GST_ERROR ("Could not get sink pad in %" GST_PTR_FORMAT, adder);
     gst_element_release_request_pad (agnosticbin, srcpad);
     goto end;
@@ -187,7 +199,7 @@ link_new_adder (gchar * key, GstElement * agnosticbin, GstElement * adder)
   KmsAudioMixer *self = KMS_AUDIO_MIXER (GST_OBJECT_PARENT (adder));
   GstElement *capsfilter;
 
-  padname = g_object_get_data (G_OBJECT (adder), KEY_SINK_PAD_NAME);
+  padname = g_object_get_qdata (G_OBJECT (adder), key_sink_pad_name_quark ());
   if (padname == NULL) {
     GST_ERROR ("No pad associated with %" GST_PTR_FORMAT, adder);
     return;
@@ -209,7 +221,7 @@ link_new_adder (gchar * key, GstElement * agnosticbin, GstElement * adder)
   }
 
   sinkpad = gst_element_get_request_pad (adder, "sink_%u");
-  if (srcpad == NULL) {
+  if (sinkpad == NULL) {
     GST_ERROR ("Could not get sink pad in %" GST_PTR_FORMAT, adder);
     gst_element_release_request_pad (agnosticbin, srcpad);
     goto end;
@@ -262,8 +274,8 @@ kms_audio_mixer_remove_sometimes_src_pad (KmsAudioMixer * self,
 {
   GstPad *pad, *peer = NULL, *adder_src;
 
-  pad = g_object_get_data (G_OBJECT (adder), KEY_PAD);
-  g_object_set_data (G_OBJECT (adder), KEY_PAD, NULL);
+  pad = g_object_get_qdata (G_OBJECT (adder), key_pad_quark ());
+  g_object_set_qdata (G_OBJECT (adder), key_pad_quark (), NULL);
 
   if (!pad) {
     return;
@@ -326,9 +338,9 @@ remove_adder (GstElement * adder)
 
   kms_audio_mixer_remove_sometimes_src_pad (self, adder);
 
-  tee = g_object_get_data (G_OBJECT (adder), KEY_TEE);
-  fakesink = g_object_get_data (G_OBJECT (adder), KEY_FAKESINK);
-  testsrc = g_object_get_data (G_OBJECT (adder), KEY_SRC);
+  tee = g_object_get_qdata (G_OBJECT (adder), key_tee_quark ());
+  fakesink = g_object_get_qdata (G_OBJECT (adder), key_fakesink_quark ());
+  testsrc = g_object_get_qdata (G_OBJECT (adder), key_src_quark ());
 
   if (testsrc) {
     remove_element (GST_BIN (self), testsrc);
@@ -503,7 +515,8 @@ kms_audio_mixer_have_type (GstElement * typefind, guint arg0, GstCaps * caps,
   gchar *padname;
   gint id;
 
-  padname = g_object_get_data (G_OBJECT (typefind), KEY_SINK_PAD_NAME);
+  padname =
+      g_object_get_qdata (G_OBJECT (typefind), key_sink_pad_name_quark ());
   if ((id = get_stream_id_from_padname (padname)) < 0) {
     GST_ERROR_OBJECT (self, "Can not get pad id from element %" GST_PTR_FORMAT,
         typefind);
@@ -520,7 +533,7 @@ kms_audio_mixer_have_type (GstElement * typefind, guint arg0, GstCaps * caps,
 
   audiorate = gst_element_factory_make ("audiorate", NULL);
   agnosticbin = gst_element_factory_make ("agnosticbin", NULL);
-  g_object_set_data_full (G_OBJECT (agnosticbin), KEY_SINK_PAD_NAME,
+  g_object_set_qdata_full (G_OBJECT (agnosticbin), key_sink_pad_name_quark (),
       g_strdup (padname), g_free);
 
   gst_bin_add_many (GST_BIN (self), audiorate, agnosticbin, NULL);
@@ -817,8 +830,9 @@ kms_audio_mixer_add_src_pad (KmsAudioMixer * self, const char *padname)
 
   g_object_set (tee, "allow-not-linked", TRUE, NULL);
   g_object_set (fakesink, "sync", FALSE, "async", FALSE, NULL);
+  g_object_set (adder, "latency", LATENCY * GST_MSECOND, NULL);
 
-  g_object_set_data_full (G_OBJECT (adder), KEY_SINK_PAD_NAME,
+  g_object_set_qdata_full (G_OBJECT (adder), key_sink_pad_name_quark (),
       g_strdup (padname), g_free);
   audiotestsrc = gst_element_factory_make ("audiotestsrc", NULL);
   g_object_set (audiotestsrc, "is-live", TRUE, "wave", /*silence */ 4, NULL);
@@ -840,6 +854,10 @@ kms_audio_mixer_add_src_pad (KmsAudioMixer * self, const char *padname)
     GST_ERROR ("Could not get sink pad in %" GST_PTR_FORMAT, adder);
     goto no_audiotestsrc;
   }
+
+  gst_pad_add_probe (sinkpad,
+      GST_PAD_PROBE_TYPE_QUERY_UPSTREAM,
+      (GstPadProbeCallback) cb_latency, NULL, NULL);
 
   GST_DEBUG ("Linking %" GST_PTR_FORMAT " to %" GST_PTR_FORMAT, srcpad,
       sinkpad);
@@ -879,10 +897,10 @@ no_audiotestsrc:
       0);
   g_free (srcname);
 
-  g_object_set_data (G_OBJECT (adder), KEY_TEE, tee);
-  g_object_set_data (G_OBJECT (adder), KEY_FAKESINK, fakesink);
-  g_object_set_data (G_OBJECT (adder), KEY_PAD, pad);
-  g_object_set_data (G_OBJECT (adder), KEY_SRC, audiotestsrc);
+  g_object_set_qdata (G_OBJECT (adder), key_tee_quark (), tee);
+  g_object_set_qdata (G_OBJECT (adder), key_fakesink_quark (), fakesink);
+  g_object_set_qdata (G_OBJECT (adder), key_pad_quark (), pad);
+  g_object_set_qdata (G_OBJECT (adder), key_src_quark (), audiotestsrc);
 
   if (GST_STATE (self) >= GST_STATE_PAUSED
       || GST_STATE_PENDING (self) >= GST_STATE_PAUSED
@@ -959,8 +977,8 @@ kms_audio_mixer_request_new_pad (GstElement * element,
     gst_element_remove_pad (element, pad);
   } else {
     g_hash_table_insert (self->priv->typefinds, g_strdup (padname), typefind);
-    g_object_set_data_full (G_OBJECT (typefind), KEY_SINK_PAD_NAME, padname,
-        g_free);
+    g_object_set_qdata_full (G_OBJECT (typefind), key_sink_pad_name_quark (),
+        padname, g_free);
     g_signal_connect (G_OBJECT (typefind), "have-type",
         G_CALLBACK (kms_audio_mixer_have_type), self);
     goto end;

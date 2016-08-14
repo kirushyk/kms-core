@@ -1,15 +1,17 @@
 /*
  * (C) Copyright 2015 Kurento (http://kurento.org/)
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the GNU Lesser General Public License
- * (LGPL) version 2.1 which accompanies this distribution, and is available at
- * http://www.gnu.org/licenses/lgpl-2.1.html
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 #ifndef __KMS_SDP_AGENT_H__
@@ -90,6 +92,7 @@ struct _KmsSdpAgentClass
 
   /* methods */
   gint (*add_proto_handler) (KmsSdpAgent * agent, const gchar *media, KmsSdpMediaHandler *handler);
+  gint (*get_handler_index) (KmsSdpAgent * agent, gint hid);
   GstSDPMessage *(*create_offer) (KmsSdpAgent * agent, GError **error);
   SdpMessageContext *(*create_answer) (KmsSdpAgent * agent, GError **error);
   gboolean (*cancel_offer) (KmsSdpAgent * agent, GError **error);
@@ -107,6 +110,7 @@ GType kms_sdp_agent_get_type ();
 KmsSdpAgent * kms_sdp_agent_new ();
 gint kms_sdp_agent_add_proto_handler (KmsSdpAgent * agent, const gchar *media, KmsSdpMediaHandler *handler);
 gboolean kms_sdp_agent_remove_proto_handler (KmsSdpAgent * agent, gint hid);
+gint kms_sdp_agent_get_handler_index (KmsSdpAgent * agent, gint hid);
 SdpMessageContext * kms_sdp_agent_create_answer (KmsSdpAgent * agent, GError **error);
 gboolean kms_sdpagent_cancel_offer (KmsSdpAgent * agent, GError **error);
 GstSDPMessage * kms_sdp_agent_create_offer (KmsSdpAgent * agent, GError **error);
@@ -114,19 +118,42 @@ gboolean kms_sdp_agent_set_local_description (KmsSdpAgent * agent, GstSDPMessage
 gboolean kms_sdp_agent_set_remote_description (KmsSdpAgent * agent, GstSDPMessage * description, GError **error);
 gint kms_sdp_agent_create_group (KmsSdpAgent * agent, GType group_type, const char *optname1, ...);
 gboolean kms_sdp_agent_group_add (KmsSdpAgent * agent, guint gid, guint hid);
+gboolean kms_sdp_agent_group_remove (KmsSdpAgent * agent, guint gid, guint hid);
 
-/* Deprecated */
+/* Deprecated begin */
 gint kms_sdp_agent_create_bundle_group (KmsSdpAgent * agent);
 gboolean kms_sdp_agent_add_handler_to_group (KmsSdpAgent * agent, guint gid, guint hid);
 gboolean kms_sdp_agent_remove_handler_from_group (KmsSdpAgent * agent, guint gid, guint hid);
 
 typedef gboolean (*KmsSdpAgentConfigureMediaCallback) (KmsSdpAgent *agent,
+                                                   KmsSdpMediaHandler *handler,
                                                    SdpMediaConfig *mconf,
                                                    gpointer user_data);
 void kms_sdp_agent_set_configure_media_callback (KmsSdpAgent * agent,
                                              KmsSdpAgentConfigureMediaCallback callback,
                                              gpointer user_data,
                                              GDestroyNotify destroy);
+/* Deprecated end */
+
+typedef struct {
+    void (*on_media_offer) (KmsSdpAgent *agent, KmsSdpMediaHandler *handler,
+                                SdpMediaConfig *local_mconf, gpointer user_data);
+    void (*on_media_answered) (KmsSdpAgent *agent,
+                                   KmsSdpMediaHandler *handler,
+                                   SdpMediaConfig *neg_mconf,
+                                   gboolean local_offerer,
+                                   gpointer user_data);
+    void (*on_media_answer) (KmsSdpAgent *agent, KmsSdpMediaHandler *handler,
+                                SdpMediaConfig *local_mconf, gpointer user_data);
+    KmsSdpMediaHandler * (*on_handler_required) (KmsSdpAgent *agent,
+                                                 const GstSDPMedia *media,
+                                                 gpointer user_data);
+} KmsSdpAgentCallbacks;
+
+void kms_sdp_agent_set_callbacks (KmsSdpAgent * agent,
+  KmsSdpAgentCallbacks * callbacks, gpointer user_data, GDestroyNotify destroy);
+
+gboolean kms_sdp_media_handler_set_parent (KmsSdpMediaHandler *handler, KmsSdpAgent * parent, GError **error);
 
 G_END_DECLS
 
